@@ -1,11 +1,24 @@
-<!DOCTYPE html>
-<html>
-    <head>
-        <title>Home Page - Microblog</title>
-    </head>
+{% extends "base.html" %}
+
+{% block content %}
     <body>
-        <h1>Hi, ''' + user['username'] + '''!</h1>
-        <p>We are so glad to see you</p> 
-        <h1>Bye, ''' + user['username'] + '''!</h1>
+        <h1>Hello, {{ user.username }} from {{ user.location}} !</h1>  
+        <hr>
+        <!-- Example If Statement -->
+        {% if user.username == 'Tua' %} 
+            <h3>Welcome Back!</h3>
+        {% else %}
+            <h3>Welcome to Microblog!</h3>
+        {% endif %}
+        <!-- Example For Loop -->
+        {% for post in posts %}
+            <div><p>{{ post.author.username }} says: <b>{{ post.body }}</b></p></div>
+        {% endfor %}
     </body>
-</html>
+    <!--<img src="vancouver.jpeg" alt="Description of the image"> -->
+    <form action="/submit" method="post">
+        <label for="name">UserName:</label>
+        <input type="text" id="name" name="name">
+        <input type="submit" value="Submit Here">
+</form>
+{% endblock %}

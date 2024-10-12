@@ -1,6 +1,7 @@
 import Constants
 from  openai import OpenAI
 import os
+import numpy as np
 import pandas as pd
 import time
 
@@ -12,13 +13,19 @@ from gspread_formatting import cellFormat, color, textFormat
 from io import StringIO
 from datetime import datetime
 
+import os
+
 cat = ['General', 'Grammar', 'Direction', 'Opinion', 'Time',
        'Description', 'Organization', 'Travel', 'Social', 'Technology',
        'Health', 'Object', 'Work', 'Intent', 'Geography', 'Agriculture',
        'Weather', 'Action', 'Problem Solving', 'Necessity', 'Support',
        'Business', 'Information', 'Emotion', 'Assurance', 'Economics',
        'Degree', 'Frequency', 'Question', 'Location', 'Sequence',
-       'Contrast', 'Thought', 'Relationship']
+       'Contrast', 'Thought', 'Relationship', 'Food', 'Weather']
+
+def path():
+    basedir = os.path.abspath(os.path.dirname(__file__))
+    return 'sqlite:///' + os.path.join(basedir, 'app.db')
 
 def load_dict(
         dict_path: str = None, 
@@ -166,7 +173,13 @@ def save_new_words_to_dict(
         chinese_dict = load_dict(gsheet_mode=gsheet_mode, gsheet_name=gsheet_name, worksheet_name=worksheet_name)
     else:
         chinese_dict = pd.read_csv(dict_path) 
-        
+    
+    max_id = pd.to_numeric(chinese_dict['Word Id'], errors='coerce').max()
+    newwords_df['Word Id'] = [num + max_id for num in range(1, len(newwords_df) + 1)]
+    newwords_df['Num_Quiz'] = 0
+    newwords_df['Num_Correct'] = 0
+    newwords_df['Num_Wrong'] = 0
+
     existing_words = chinese_dict['Word'].drop_duplicates().values
 
     starting_words_len = len(existing_words)
