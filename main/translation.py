@@ -5,15 +5,24 @@ import numpy as np
 import pandas as pd
 import time
 
-import gspread
-import gspread_dataframe as gd
-import gspread_formatting as gf
-from gspread_formatting import cellFormat, color, textFormat
-
+import os
 from io import StringIO
 from datetime import datetime
 
-import os
+from main.gsheets import load_dict, save_df_to_gsheet, format_gsheet
+
+client = OpenAI(
+    api_key = Constants.API_KEY_OPENAI,
+)
+
+def get_completion(prompt, model="gpt-4o-mini", temperature=0):
+    messages = [{"role": "user", "content": prompt}]
+    response = client.chat.completions.create(
+        model=model,
+        messages=messages,
+        temperature=temperature,
+    )
+    return response
 
 cat = ['General', 'Grammar', 'Direction', 'Opinion', 'Time',
        'Description', 'Organization', 'Travel', 'Social', 'Technology',
@@ -26,68 +35,6 @@ cat = ['General', 'Grammar', 'Direction', 'Opinion', 'Time',
 def path():
     basedir = os.path.abspath(os.path.dirname(__file__))
     return 'sqlite:///' + os.path.join(basedir, 'app.db')
-
-def load_dict(
-        dict_path: str = None, 
-        gsheet_mode=False, 
-        gsheet_name = None, 
-        worksheet_name = None
-        ):
-    if gsheet_mode:
-        sa = gspread.service_account()
-        sh = sa.open(gsheet_name)
-        wks = sh.worksheet(worksheet_name)
-        current_data = pd.DataFrame(wks.get_all_values())
-        current_data.columns = current_data.iloc[0]
-        current_data = current_data.iloc[1:]
-        return current_data
-    
-    else:
-        if os.path.exists(dict_path):
-            return pd.read_csv(dict_path)
-        else:
-            return pd.DataFrame(columns=["Chinese", "English", "Pinyin"])
-
-     
-def save_df_to_gsheet(
-        gsheet_name, 
-        wks_name,
-        df_to_save,
-        overwrite_mode = False
-    ):
-    sa = gspread.service_account()
-    sh = sa.open(gsheet_name)
-    wks = sh.worksheet(wks_name)
-
-    if not overwrite_mode:
-        existing = gd.get_as_dataframe(wks)
-        df_to_save = pd.concat([existing, df_to_save])
-    
-    gd.set_with_dataframe(wks, df_to_save)
-
-
-def format_gsheet(
-        gsheet_name, 
-        wks_name
-    ):
-    sa = gspread.service_account()
-    sh = sa.open(gsheet_name)
-    wks = sh.wks(wks_name)
-
-    fmt = cellFormat(
-        backgroundColor=color(0.6, 0.8, 0.9),
-        textFormat=textFormat(bold=True, fontSize=15, foregroundColor=color(0, 0, 0.6)),
-        horizontalAlignment='CENTER'
-        )
-
-    gf.format_cell_range(wks, 'A1:H1', fmt)
-
-    fmt = cellFormat(
-        textFormat=textFormat(fontSize=15),
-        )
-
-    gf.format_cell_range(wks, 'A2:A500', fmt)
-    gf.format_cell_range(wks, 'E2:E500', fmt)
 
 
 def get_prompt_for_chinese_translation(chinese_words, existing_categories=cat):
@@ -176,7 +123,7 @@ def save_new_words_to_dict(
     
     max_id = pd.to_numeric(chinese_dict['Word Id'], errors='coerce').max()
     newwords_df['Word Id'] = [num + max_id for num in range(1, len(newwords_df) + 1)]
-    newwords_df['Num_Quiz'] = 0
+    newwords_df['Num_Quiz_Attempt'] = 0
     newwords_df['Num_Correct'] = 0
     newwords_df['Num_Wrong'] = 0
 
@@ -199,6 +146,7 @@ def save_new_words_to_dict(
         
         print(f"Overwrite mode disabled.  {new_words_len - dedup_words_len} exists in current dictionary, adding {dedup_words_len} words.")
 
+    chinese_dict = chinese_dict.loc[(chinese_dict['Word Id'].notnull()) & (chinese_dict['Word Id'] != '')]
     if gsheet_mode:
         save_df_to_gsheet(gsheet_name, worksheet_name, chinese_dict, overwrite_mode=True)
     else:
