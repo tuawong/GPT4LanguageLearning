@@ -1,4 +1,4 @@
-from typing import List, Dict, Any, Tuple
+from typing import List, Dict, Any, Tuple, Union
 
 import Constants
 from  openai import OpenAI
@@ -135,8 +135,9 @@ def randomize_word_for_quiz(
         dict_df: pd.DataFrame, 
         id_column: str = 'Word Id',
         num_words: int = 10,
-        date_filter: str = None,
-        category_filter: str = None
+        date_filter: Union[List[str], str] = None,
+        category_filter: Union[List[str], str] = None, 
+        rarity_filter: Union[List[str], str] = None
     ) -> pd.Series:
     '''
     This function selects a random set of words from the dictionary
@@ -144,8 +145,16 @@ def randomize_word_for_quiz(
     '''
     if date_filter is not None:
         dict_df = dict_df[dict_df['Added Date'] >= date_filter]
+
     if category_filter is not None:
-        dict_df = dict_df[dict_df['Word Category'] == category_filter]
+        if type(category_filter) == str:
+            category_filter = [category_filter]
+            dict_df = dict_df[dict_df['Word Category'].isin(category_filter)]
+
+    if rarity_filter is not None:
+        if type(rarity_filter) == str:
+            rarity_filter = [rarity_filter]
+            dict_df = dict_df[dict_df['Word Rarity'].isin(rarity_filter)]
 
     unique_ids = dict_df[id_column].unique()
     num_to_select = min(num_words, len(unique_ids))
@@ -203,6 +212,7 @@ def check_meaning(
     meaning_eval_df = parse_meaning_table(sample_response_translation.choices[0].message.content)
     meaning_eval_df = meaning_eval_df.reset_index(drop=True)
     return meaning_eval_df
+
 
 def evaluate_pinyin_and_meaning_quiz(
         answer_key_df,

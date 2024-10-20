@@ -1,3 +1,5 @@
+from typing import List
+
 import Constants
 from  openai import OpenAI
 import os
@@ -42,26 +44,82 @@ def get_prompt_for_chinese_translation(chinese_words, existing_categories=cat):
     For each of the input Chinese words, please output the following as a one row in a table.  There should be the following columns in table related to the word.  
 
     Generate output similar to the following example: 
-    1. Word:  农场
+    1. Word:  农场 (If the word provided is in traditional Chinese, then replace it with the simplified version)
     2. Pinyin:  nóng chǎng  (This is a column of proper pinyin.  All the tones should be shown explicitly, no number representation for tone allowed in this column) 
     3. Pinyin Simplified:  nong2 chang3  (Instead of showing tones explicitly use number to represent tones instead and use v to represent the special character ǜ)    
     4. Type:   Noun (This should be adjusted whether the meaning of the word is noun/adjective/verb based on the meaning and example sentence)
+    5. Word Category: Agriculture (This should be a general category that the word belongs to)
     5. Meaning:  Farm (This is could be a longer description of the meaning of the word if no exact translation exists in English.  If this is a common word in English, then only one word translation is sufficient)
     6. Sentence:  我暑假打算去爷爷的农场帮忙  
     7. Sentence Pinyin:  Wǒ shǔjià dǎsuàn qù yéye de nóngchǎng bāngmáng. 
     8. Sentence Meaning:  I plan to go to my grandfather's farm to help during the summer vacation.
-    9. Word Category: Agriculture (This should be a general category that the word belongs to)
 
     For each word with multiple meanings, add more rows to the the table with alternate meaning and example sentence.  Each row should have a unique meaning.
     If there is only one meaning, then keep only one row for each word.  Do not add rows for alternate meanings if there is only one meaning.  If the two meanings are sufficiently similar then they can be included in the same row.
     If the meanings are different, then the second meaning should be in a new row with the same word, pinyin, word type, and sentence.  Don't omit any values in any row even if they are the same as the row above.
+
+    Translation Instructions:
+    When provided with words that have nuances such that the English translation is not sufficient to capture the full meaning of the word, please provide a more nuanced translation.  
+    Do NOT provide incomplete one word translations for words that have nuanced meanings.  
+    Example words with nuanced translations:
+
+    Word: 包容
+    Incomplete Literal Translation: Tolerance --> (Incorrect)
+    Nuanced Translation: To accept differences with understanding, not just putting up with them. --> (Correct)
+
+    Word: 敬畏 (jìngwèi)
+    Incomplete Literal Translation: Respect --> (Incorrect)
+    Nuanced Translation: A deep awe mixed with fear toward something greater. --> (Correct)
+
+    Word: 缘分 (yuánfèn)
+    Incomplete Literal Translation: Fate --> (Incorrect)
+    Correct Nuanced Translation: A destined connection or bond between people. --> (Correct)
+
+    Word: 顾忌 (gùjì)
+    Incomplete Literal Translation: Concern --> (Incorrect)
+    Correct Nuanced Translation: Hesitation or reservation caused by fear, worry, or consideration of other people's feelings or social norms. --> (Correct)
+
+    Word: 缘分 (yuánfèn)
+    Incomplete Literal Translation: Fate --> (Incorrect)
+    Correct Nuanced Translation: A destined connection or bond between people. --> (Correct)
+
+    Word: 时光 (shíguāng)
+    Incomplete Literal Translation: Time --> (Incorrect)
+    Correct Nuanced Translation: A period or moment in time; often used poetically to refer to the passage of time. --> (Correct)
+
+    Conversely, if a word has a simple translation that is sufficient to capture the meaning, then only provide the simple translation.  
+    Do not provide a nuanced translation if the simple translation is sufficient.  
+    In this case, do not nuance along the simple translation.  Only provide the simple translation.
+    Example words with simple translations:
+    Word: 爱 (ài)
+    Literal Translation: Love --> (Correct)
+    Explained Translation:  Love; An intense feeling of deep affection.--> (Incorrect)
+
+    Word: 陌生人 (mòshēngrén)
+    Literal Translation: Stranger --> (Correct)
+    Explained Translation: A person whom one does not know --> (Incorrect)
     
-    All input words should be included in one table.  Only return the table with no other text.
+    Word: 水 (shuǐ)
+    Literal Translation: Water  --> (Correct)
+    Explained Translation: A colorless, transparent, odorless liquid that forms the seas, lakes, rivers, and rain --> (Incorrect)
+
+    Word: 吹 (chuī)
+    Literal Translation: To blow  --> (Correct)
+    Explained Translation: To emit air through pursed lips --> (Incorrect)
+
+    Word: 时间 (shíjiān)
+    Literal Translation: Time  --> (Correct)
+    Explained Translation: The indefinite continued progress of existence --> (Incorrect)
+
+    Word: 客户 (kèhù)
+    Literal Translation: Client  --> (Correct)
+    Explained Translation: Client; a person or organization using the services of a professional or business.  --> (Incorrect)
 
     Input Chinese Word = {chinese_words}
     Do not include any word that is not in the list {chinese_words} in the Word column of the ouput table
+    
+    All input words should be included in one table.  Only return the table with no other text.
     """
-
 
     if existing_categories:
         chinese_prompt = f"""
@@ -73,9 +131,90 @@ def get_prompt_for_chinese_translation(chinese_words, existing_categories=cat):
 
     return chinese_prompt
 
+def get_prompt_for_rarity_classification(chinese_words, debug=False):
+    chinese_prompt =  f"""
+    For each of the input Chinese please generate a classification of how rare they word is.
+
+    Rarity Classification:  
+    Common:  Used in everyday conversations or in formal situations.
+    Rare:  Used only in a more poetic/literary sense.  Will typically only seen in songs or poem or literature.  Very rarely used in conversation. 
+    If a word is both often used in both common conversation and in literature, it MUST be classified as common.  
+    Only classify words as rare if they are not used in everyday conversation.  
+
+    Each word should be outputted as a single row in a table. 
+    No other written response should be outputted except for the table.  No text or symbols should be outputted except for the table.
+    The columns in the table should be as follows:
+    1) Word:  农场 (If the word provided is in traditional Chinese, then the simplified version should be provided in parentheses)
+    2) Word Rarity:  Common (This should be adjusted based on the rarity of the word)
+    Do not change the column names or the order of the columns.  Only include the columns above in the table.
+
+    Input Chinese Word = {chinese_words}
+    Do not include any word that is not in the list {chinese_words} in the Word column of the ouput table
+    If there is duplicate in the word list, then only include the word once in the table.  
+    Do not include the same word multiple times in the table.
+    """
+
+    
+    if debug:
+        chinese_prompt = f"""
+            {chinese_prompt}
+
+            In addition to the first two columns, also include the following columns in the table.
+            3) Pinyin:  nóng chǎng  (This is a column of proper pinyin.  All the tones should be shown explicitly, no number representation for tone allowed in this column)
+            4) Meaning:  Farm (This is could be a longer description of the meaning of the word if no exact translation exists in English.  If this is a common word in English, then only one word translation is sufficient)
+            5) Justification:  Provide a brief explanation of why the word is classified as common, uncommon, or rare.  This should be a brief explanation of why the word is classified as such.  
+            """
+        
+    return chinese_prompt
+
+# Multiclass rarity classification into common, uncommon, and rare is still difficult 
+# Model mixes up the classification of the words.  Need to provide more examples and more detailed instructions
+def get_prompt_for_multiclass_rarity_classification(chinese_words, debug=False):
+    chinese_prompt =  f"""
+    For each of the input Chinese please generate a classification of how rare they word is.
+
+    Rarity Classification:  
+    Common:  Used in everyday conversations.  
+    Uncommon:  Used in conversation but during formal situation such as in when you're in a meeting or talking to someone to be respected.  
+    Rare:  Used only in a more poetic/literary sense.  Will typically only seen in songs or poem or literature.  Very rarely used in conversation. 
+    If a word is both often used in both common conversation and in literature, it MUST be classified as common.  
+    Only classify words as uncommon or rare if they are not used in everyday conversation.  
+
+    Each word should be outputted as a single row in a table. 
+    No other written response should be outputted except for the table.  
+    The columns in the table should be as follows:
+    1) Word:  农场 (If the word provided is in traditional Chinese, then replace it with the simplified version.  Do not both words in parentheses)
+    2) Word Rarity:  Common (This should be adjusted based on the rarity of the word with the two options Common or Rare)
+    Do not change the column names or the order of the columns.  Only include the columns above in the table.
+
+    Example Words Common: 太太, 主意, 酒店, 超市, 带, 多久
+    Example Words Rare: 奢求, 空虚, 时光, 仰望, 侧脸
+
+    Input Chinese Word = {chinese_words}
+    Do not include any word that is not in the list {chinese_words} in the Word column of the ouput table
+    If there is duplicate in the word list, then only include the word once in the table.  
+    Do not include the same word multiple times in the table.
+    """
+
+    
+    if debug:
+        chinese_prompt = f"""
+            {chinese_prompt}
+
+            In addition to the first two columns, also include the following columns in the table.
+            3) Pinyin:  nóng chǎng  (This is a column of proper pinyin.  All the tones should be shown explicitly, no number representation for tone allowed in this column)
+            4) Meaning:  Farm (This is could be a longer description of the meaning of the word if no exact translation exists in English.  If this is a common word in English, then only one word translation is sufficient)
+            5) Justification:  Provide a brief explanation of why the word is classified as common, uncommon, or rare.  This should be a brief explanation of why the word is classified as such.  
+            """
+        
+    return chinese_prompt
 
 
-def parse_translation_response(content: str) -> pd.DataFrame:
+def parse_translation_response(
+        content: str, 
+        ffill_cols: List[str] = None,
+        date_col: List[str] = None
+        ) -> pd.DataFrame:
     '''
     Parse the table response from OpenAI into a pandas DataFrame
     '''
@@ -92,11 +231,14 @@ def parse_translation_response(content: str) -> pd.DataFrame:
 
     col_to_keep = [col for col in df if 'Unnamed' not in col]
     df = df[col_to_keep]
-    df['Word'] = df.Word.replace('', pd.NA).ffill()
-    df['Pinyin'] = df.Pinyin.replace('', pd.NA).ffill()
-    df['Pinyin Simplified'] = df['Pinyin Simplified'].replace('', pd.NA).ffill()
-    df['Type'] = df.Type.replace('', pd.NA).ffill()
-    df['Added Date'] = datetime.now().strftime("%Y-%m-%d")
+
+    if ffill_cols:
+        for col in ffill_cols:
+            df[col] = df[col].replace('', pd.NA).ffill()
+
+    if date_col:
+        for col in date_col:
+            df[col] = datetime.now().strftime("%Y-%m-%d")
 
     return df
 
@@ -126,7 +268,13 @@ def save_new_words_to_dict(
     newwords_df['Num_Quiz_Attempt'] = 0
     newwords_df['Num_Correct'] = 0
     newwords_df['Num_Wrong'] = 0
+    newwords_df['Last_Quiz'] = ''
 
+    missing_cols = [col for col in chinese_dict.columns if col not in newwords_df.columns]
+    if len(missing_cols) > 0:
+        raise Exception(f"Missing columns in df to add: {missing_cols}")
+
+    newwords_df = newwords_df[chinese_dict.columns]
     existing_words = chinese_dict['Word'].drop_duplicates().values
 
     starting_words_len = len(existing_words)
