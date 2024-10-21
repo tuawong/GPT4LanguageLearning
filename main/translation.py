@@ -103,6 +103,10 @@ def get_prompt_for_chinese_translation(chinese_words, existing_categories=cat):
     Literal Translation: Water  --> (Correct)
     Explained Translation: A colorless, transparent, odorless liquid that forms the seas, lakes, rivers, and rain --> (Incorrect)
 
+    Word: 狗 (gǒu)
+    Literal Translation: Dog  --> (Correct)
+    Explained Translation: A domesticated carnivorous mammal that typically has a long snout, an acute sense of smell, nonretractable claws, and a barking, howling, or whining voice --> (Incorrect)
+
     Word: 吹 (chuī)
     Literal Translation: To blow  --> (Correct)
     Explained Translation: To emit air through pursed lips --> (Incorrect)
