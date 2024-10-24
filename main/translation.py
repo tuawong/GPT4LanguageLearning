@@ -230,7 +230,7 @@ def parse_translation_response(
 
     # Cleaning the DataFrame by stripping leading/trailing whitespaces from column names and data
     df.columns = df.columns.str.strip()
-    df = df.applymap(lambda x: x.strip() if isinstance(x, str) else x)
+    df = df.map(lambda x: x.strip() if isinstance(x, str) else x)
     df = df.loc[~df.Word.str.contains('--')]
 
     col_to_keep = [col for col in df if 'Unnamed' not in col]
@@ -303,3 +303,56 @@ def save_new_words_to_dict(
         save_df_to_gsheet(gsheet_name, worksheet_name, chinese_dict, overwrite_mode=True)
     else:
         chinese_dict.to_csv(dict_path, index=False)
+
+
+#Might be better to make into a class and have the run_translation_pipeline as a method to save on computation time 
+def run_translation_pipeline(
+    word_list: List[str], 
+    gsheet_name: str, 
+    worksheet_name: str, 
+    show_df: bool = True, 
+    overwrite_mode: bool = False,
+    translation_model: str = "gpt-4o", 
+    rarity_model: str = "gpt-4o-mini",
+    temp: float = 0.7,
+    ) -> None:
+    '''
+    Run the translation pipeline to add new words to the Chinese dictionary.
+    '''
+    #Run Translation Module 
+    sample_response_translation = (
+    get_completion(
+            prompt=get_prompt_for_chinese_translation(word_list), model=translation_model , temperature=temp))
+    content = sample_response_translation.choices[0].message.content
+
+    newwords_df = (
+        parse_translation_response(
+            content,
+            ffill_cols = ['Word', 'Pinyin', 'Pinyin Simplified', 'Type'],
+            date_col = ['Added Date']
+            )
+        )
+
+    new_words = newwords_df['Word'].drop_duplicates().values
+
+    #Run Rarity Classification Module
+    sample_response_translation = (
+        get_completion(
+            prompt=get_prompt_for_rarity_classification(word_list), model=rarity_model , temperature=temp))
+    content = sample_response_translation.choices[0].message.content
+
+    word_rarity_df = parse_translation_response(content)
+
+    #Run Update Module
+    upload_df = pd.merge(newwords_df, word_rarity_df, on='Word', how='left')
+
+    if show_df:
+        print(upload_df)
+
+    save_new_words_to_dict(
+        newwords_df = upload_df,
+        gsheet_mode= True,
+        overwrite_mode = overwrite_mode,
+        gsheet_name = gsheet_name,
+        worksheet_name = worksheet_name
+    )
