@@ -27,17 +27,21 @@ translator_pipe = TranslationPipeline(gsheet_name=gsheet_name, worksheet_name=di
 df = pd.DataFrame()
 
 # Generate styles for the app
-dash.register_page(__name__, path='/translation')
+dash.register_page(__name__, path='/translation', name='Translation')
 
 
 # App layout
 layout = dbc.Container(
         [
             # Text input and submit button
-            html.Div([
-                dcc.Input(id='word-list', type='text', placeholder='Enter some text', style={'marginRight': '10px'}),
-                dbc.Button('Submit', id='submit-button', n_clicks=0)
-            ], style={'display': 'flex', 'alignItems': 'center', 'marginBottom': '20px'}),
+            dbc.Row(dbc.Col(
+                html.Div([
+                    html.Label('Please Enter Text for Translation Here', style={'marginRight': '10px', "font-size": "1rem", "color": "#6c757d"}),
+                    dcc.Input(id='word-list', type='text', placeholder='Enter some text', style={'marginRight': '10px'}),
+                    dbc.Button('Submit', id='submit-button', n_clicks=0)
+                ], style={'display': 'flex', 'alignItems': 'center', 'marginBottom': '20px'}),
+                className="d-flex justify-content-center"
+            )),
             html.Hr(),
             
             dbc.Row(dbc.Col(
@@ -60,13 +64,15 @@ layout = dbc.Container(
                 width=12,
                 className="shadow-lg p-3 mb-5 bg-white rounded"
             )),
-            html.Div([
-                dbc.ButtonGroup([
-                    dbc.Button('Update Table', id='update-button', n_clicks=0, color='primary'),
-                    dbc.Button('Reset Table', id='reset-button', n_clicks=0, color='secondary'),
-                ]),
-                html.Div(id='update-status', style={'marginTop': '20px', 'fontSize': '20px', 'fontWeight': 'bold'}),
-            ])
+            dbc.Row(dbc.Col(
+                html.Div([
+                    dbc.ButtonGroup([
+                        dbc.Button('Update Table', id='update-button', n_clicks=0, color='primary'),
+                        dbc.Button('Reset Table', id='reset-button', n_clicks=0, color='secondary'),
+                    ]),
+                    html.Div(id='update-status', style={'marginTop': '20px', 'fontSize': '20px', 'fontWeight': 'bold'}),
+                ])
+            )),
         ]
         , fluid=True
     )
@@ -95,4 +101,4 @@ def update_output(n_clicks):
             return message
         else:
             return "Please add words to be translated and click Submit."
-    return "Please enter text and click Submit."
+    return ""

@@ -10,10 +10,10 @@ import dash_bootstrap_components as dbc
 dict_sheet_name = "Tua_List"
 gsheet_name = "New Chinese Words"
 
-df = load_dict(gsheet_mode=True, gsheet_name=gsheet_name, worksheet_name=dict_sheet_name)
-word_date = df['Added Date'].drop_duplicates().sort_values().to_list()
-word_cat = df['Word Category'].drop_duplicates().sort_values().to_list()
-word_rarity = df['Word Rarity'].drop_duplicates().sort_values().to_list()
+orig_df = load_dict(gsheet_mode=True, gsheet_name=gsheet_name, worksheet_name=dict_sheet_name)
+word_date = orig_df['Added Date'].drop_duplicates().sort_values().to_list()
+word_cat = orig_df['Word Category'].drop_duplicates().sort_values().to_list()
+word_rarity = orig_df['Word Rarity'].drop_duplicates().sort_values().to_list()
 
 
 dash.register_page(__name__, path='/dictionary')
@@ -60,12 +60,15 @@ layout = dbc.Container([
                 ])
             ], className="mb-4 shadow-sm")
         ], width=4),
+        dbc.Col([dbc.Button('Reload Table', id='reload-button', n_clicks=0, color='primary')]),
     ], className="mb-5"),  # Space between filters and table
+
     html.Hr(),
     # Data table with additional margin and styling
+    dcc.Store(id="table-data-store"),
     dbc.Row(dbc.Col(
         dash_table.DataTable(
-            data=df.to_dict('records'),
+            data=orig_df.to_dict('records'),
             sort_action="native",  # Enable sorting
             #filter_action="native",  # Enable filtering
             editable=True,  # Enable cell editing
@@ -85,20 +88,32 @@ layout = dbc.Container([
     )),
 ], fluid=True)
 
+@callback(
+    Output(component_id='table-data-store', component_property='data'),
+    Input('reload-button', 'n_clicks')
+)
+def reload_table(n_clicks):
+    if n_clicks > 0:
+        df = load_dict(gsheet_mode=True, gsheet_name=gsheet_name, worksheet_name=dict_sheet_name)
+        return df.to_dict('records')
+    else:
+        return orig_df.to_dict('records')
 
 # Add controls to build the interaction
 @callback(
     Output(component_id='dict-display', component_property='data'),
-    [Input(component_id='date-dropdown', component_property='value'),
+    [Input(component_id='table-data-store', component_property='data'),
+     Input(component_id='date-dropdown', component_property='value'),
      Input(component_id='category-dropdown', component_property='value'),
      Input(component_id='rarity-dropdown', component_property='value')]
 )
 def slice_table(
+    table_data: pd.DataFrame,
     date_filter: str = None,
     category_filter: str = None, 
     rarity_filter: str = None
     ) -> pd.Series:
-    out_table = df.copy()
+    out_table = pd.DataFrame(table_data)
     if date_filter!= 'All':
         out_table = out_table[out_table['Added Date'] >= date_filter]
 
