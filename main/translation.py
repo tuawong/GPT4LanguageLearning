@@ -284,75 +284,97 @@ def save_new_words_to_dict(
     starting_words_len = len(existing_words)
     new_words_len = len(new_words)
 
+    print(new_words)
     if overwrite_mode:
+        print(f'Word Before: {chinese_dict.loc[chinese_dict.Word.isin(new_words)][['Word Id', 'Word']]}')
         chinese_dict = chinese_dict.loc[~chinese_dict.Word.isin(new_words)]
-        dedup_words_len = len(chinese_dict['Word'].drop_duplicates().values)
-        chinese_dict = pd.concat([chinese_dict, newwords_df])
+        print(f'Word After: {chinese_dict.loc[chinese_dict.Word.isin(new_words)][['Word Id', 'Word']]}')
+        if len(chinese_dict.loc[chinese_dict.Word.isin(new_words)]) == 0:
+
+            dedup_words_len = len(chinese_dict['Word'].drop_duplicates().values)
+            chinese_dict = pd.concat([chinese_dict, newwords_df])
         
-        print(f"Overwrite mode enabled.  Replacing {starting_words_len - dedup_words_len} words and {new_words_len - (starting_words_len - dedup_words_len)} new words added.")
+        else:
+            raise Exception("Some words in the new words list already exist in the dictionary.  Please disable overwrite mode to add new words.")
+            
+        message = f"Overwrite mode enabled.  Replacing {starting_words_len - dedup_words_len} words and {new_words_len - (starting_words_len - dedup_words_len)} new words added."
 
     else: 
         newwords_df = newwords_df.loc[~newwords_df.Word.isin(existing_words)]
         dedup_words_len = len(newwords_df['Word'].drop_duplicates().values)
         chinese_dict = pd.concat([chinese_dict, newwords_df])
         
-        print(f"Overwrite mode disabled.  {new_words_len - dedup_words_len} exists in current dictionary, adding {dedup_words_len} words.")
+        message = f"Overwrite mode disabled.  {new_words_len - dedup_words_len} exists in current dictionary, adding {dedup_words_len} words."
 
     chinese_dict = chinese_dict.loc[(chinese_dict['Word Id'].notnull()) & (chinese_dict['Word Id'] != '')]
+    chinese_dict['Word'] = chinese_dict['Word'].str.strip()
+
     if gsheet_mode:
-        save_df_to_gsheet(gsheet_name, worksheet_name, chinese_dict, overwrite_mode=True)
+        #Save empty df first to clear the worksheet
+        save_df_to_gsheet(gsheet_name, worksheet_name, pd.DataFrame(), overwrite_mode=overwrite_mode)
+        save_df_to_gsheet(gsheet_name, worksheet_name, chinese_dict, overwrite_mode=overwrite_mode)
     else:
         chinese_dict.to_csv(dict_path, index=False)
+    
+    return message
 
 
-#Might be better to make into a class and have the run_translation_pipeline as a method to save on computation time 
-def run_translation_pipeline(
-    word_list: List[str], 
-    gsheet_name: str, 
-    worksheet_name: str, 
-    show_df: bool = True, 
-    overwrite_mode: bool = False,
-    translation_model: str = "gpt-4o", 
-    rarity_model: str = "gpt-4o-mini",
-    temp: float = 0.7,
-    ) -> None:
+class TranslationPipeline:
     '''
-    Run the translation pipeline to add new words to the Chinese dictionary.
+    Translation pipeline to generate translations for Chinese words and update the dictionary with the new words.
     '''
-    #Run Translation Module 
-    sample_response_translation = (
-    get_completion(
-            prompt=get_prompt_for_chinese_translation(word_list), model=translation_model , temperature=temp))
-    content = sample_response_translation.choices[0].message.content
+    def __init__(self, gsheet_name, worksheet_name):
+        self.gsheet_name = gsheet_name
+        self.worksheet_name = worksheet_name
+    
+    def translation_module(self, word_list, translation_model="gpt-4o", rarity_model="gpt-4o-mini", temp=0.7, replace_new_words=True):
+        ## Generate words translation
+        translation_response = (
+            get_completion(
+                prompt=get_prompt_for_chinese_translation(word_list), model=translation_model , temperature=temp))
 
-    newwords_df = (
-        parse_translation_response(
-            content,
-            ffill_cols = ['Word', 'Pinyin', 'Pinyin Simplified', 'Type'],
-            date_col = ['Added Date']
+        newwords_df = (
+            parse_translation_response(
+                translation_response.choices[0].message.content,
+                ffill_cols = ['Word', 'Pinyin', 'Pinyin Simplified', 'Type'],
+                date_col = ['Added Date']
+                )
             )
-        )
+        
+        ## Generate words rarity classification
+        rarity_response = (
+            get_completion(
+                prompt=get_prompt_for_rarity_classification(word_list), model=rarity_model, temperature=temp))
 
-    new_words = newwords_df['Word'].drop_duplicates().values
+        word_rarity_df = parse_translation_response(rarity_response.choices[0].message.content)
+        newwords_df = pd.merge(newwords_df, word_rarity_df, on='Word', how='left')
 
-    #Run Rarity Classification Module
-    sample_response_translation = (
-        get_completion(
-            prompt=get_prompt_for_rarity_classification(word_list), model=rarity_model , temperature=temp))
-    content = sample_response_translation.choices[0].message.content
+        if not (replace_new_words) and hasattr(self, 'new_words_df'):
+            orig_new_words_df = self.new_words_df.copy()
+            orig_new_words_df = orig_new_words_df.loc[~orig_new_words_df.Word.isin(newwords_df.Word)]
+            self.new_words_df = pd.concat([orig_new_words_df, newwords_df])
 
-    word_rarity_df = parse_translation_response(content)
+        else:
+            self.new_words_df = newwords_df
+            
+    def clear_new_words(self):
+        self.new_words_df = pd.DataFrame()
 
-    #Run Update Module
-    upload_df = pd.merge(newwords_df, word_rarity_df, on='Word', how='left')
+    def update_module(self, overwrite_mode=False):
+        if hasattr(self, 'new_words_df'):
+            message = save_new_words_to_dict(
+                newwords_df = self.new_words_df,
+                gsheet_mode= True,
+                overwrite_mode = overwrite_mode,
+                gsheet_name = self.gsheet_name,
+                worksheet_name = self.worksheet_name
+            )
 
-    if show_df:
-        print(upload_df)
-
-    save_new_words_to_dict(
-        newwords_df = upload_df,
-        gsheet_mode= True,
-        overwrite_mode = overwrite_mode,
-        gsheet_name = gsheet_name,
-        worksheet_name = worksheet_name
-    )
+            return message
+        else:
+            raise Exception("Run the translation module first before running the update module.")
+    
+    def run_translation_pipeline(self, word_list, translation_model="gpt-4o", rarity_model="gpt-4o-mini", temp=0.7, overwrite_mode=False):
+        self.translation_module(word_list, translation_model=translation_model, rarity_model=rarity_model, temp=temp)   
+        message = self.update_module(overwrite_mode=overwrite_mode)
+        return message

@@ -53,7 +53,8 @@ def save_df_to_gsheet(
     if not overwrite_mode:
         existing = gd.get_as_dataframe(wks)
         df_to_save = pd.concat([existing, df_to_save])
-    
+        
+    wks.batch_clear(["A:Q"])
     gd.set_with_dataframe(wks, df_to_save)
 
 

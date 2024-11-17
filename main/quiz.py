@@ -74,7 +74,7 @@ def get_prompt_evaluate_quiz_meaning_only(
     Please generate the following table with the following columns: 
     Word List (Column #1):  The word list provided
     Meaning (Column #2):  The meaning provided by the students {meaning}
-    Meaning Correct (Column #3):  Check whether the Provided Meaning is correct given the context sentence.  Give just yes/no response.  
+    Meaning Correct (Column #3):  Check whether the Provided Meaning is correct given the context sentence.  The meaning of the word has to evaluated in the context of the sentence provided. Give just yes/no response.  
     Meaning Correction (Column #4):  If column #3 is "no" provide short explanation of why the meaning is incorrect and provide correct answer.  The explanation should not be longer than 20 words.  If column #6 is "yes" then must be blank.  
 
     The table columns must be (1) Word List, (2) Meaning, (3) Meaning Correct, (4) Meaning Correction
