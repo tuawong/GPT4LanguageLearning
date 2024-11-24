@@ -284,11 +284,10 @@ def save_new_words_to_dict(
     starting_words_len = len(existing_words)
     new_words_len = len(new_words)
 
-    print(new_words)
     if overwrite_mode:
-        print(f'Word Before: {chinese_dict.loc[chinese_dict.Word.isin(new_words)][['Word Id', 'Word']]}')
+        #print(f'Word Before: {chinese_dict.loc[chinese_dict.Word.isin(new_words)][['Word Id', 'Word']]}')
         chinese_dict = chinese_dict.loc[~chinese_dict.Word.isin(new_words)]
-        print(f'Word After: {chinese_dict.loc[chinese_dict.Word.isin(new_words)][['Word Id', 'Word']]}')
+        #print(f'Word After: {chinese_dict.loc[chinese_dict.Word.isin(new_words)][['Word Id', 'Word']]}')
         if len(chinese_dict.loc[chinese_dict.Word.isin(new_words)]) == 0:
 
             dedup_words_len = len(chinese_dict['Word'].drop_duplicates().values)
@@ -351,7 +350,10 @@ class TranslationPipeline:
 
         if not (replace_new_words) and hasattr(self, 'new_words_df'):
             orig_new_words_df = self.new_words_df.copy()
-            orig_new_words_df = orig_new_words_df.loc[~orig_new_words_df.Word.isin(newwords_df.Word)]
+
+            print(f"Original New Words: {orig_new_words_df}")
+            if len(orig_new_words_df) > 0:
+                orig_new_words_df = orig_new_words_df.loc[~orig_new_words_df.Word.isin(newwords_df.Word)]
             self.new_words_df = pd.concat([orig_new_words_df, newwords_df])
 
         else:

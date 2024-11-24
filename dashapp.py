@@ -36,7 +36,8 @@ def top_navbar():
                     pills=True,
                     className="ms-auto",  # Right align using margin-left: auto
                 ),
-            ]
+            ],
+            fluid=True,
         ),
         color="dark",
         dark=True,     
