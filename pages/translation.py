@@ -59,7 +59,12 @@ layout = dbc.Container(
                         page_size=50, 
                         sort_action="native",
                         editable=True,
-                        id='datatable'
+                        id='vocab-datatable',
+                        style_cell={
+                            "textAlign": "center",  # Align text to the center
+                            "padding": "10px",      # Add padding to cells
+                            "fontFamily": "Arial",  # Set font
+                        },
                 ),
                 width=12,
                 className="shadow-lg p-3 mb-5 bg-white rounded"
@@ -71,6 +76,7 @@ layout = dbc.Container(
                         dbc.Button('Reset Table', id='reset-button', n_clicks=0, color='secondary'),
                     ]),
                     html.Div(id='update-status', style={'marginTop': '20px', 'fontSize': '20px', 'fontWeight': 'bold'}),
+                    html.Div(id='clear-status', style={'marginTop': '20px', 'fontSize': '20px', 'fontWeight': 'bold'}),
                 ])
             )),
         ]
@@ -79,15 +85,15 @@ layout = dbc.Container(
 
 # Callback to update output text on button click
 @callback(
-    Output(component_id='datatable', component_property='data'),
+    Output(component_id='vocab-datatable', component_property='data'),
     Input('submit-button', 'n_clicks'),     
     State('word-list', 'value')           
 )
 def run_translation(n_clicks, word_list):
     if n_clicks > 0 and word_list:
         translator_pipe.translation_module(word_list, temp=0.7, replace_new_words=False)
-        return translator_pipe.new_words_df.to_dict('records')
-    return df.to_dict('records')
+    return translator_pipe.new_words_df.to_dict('records')
+
 
 @callback(
     Output('update-status', 'children'),
@@ -101,4 +107,16 @@ def update_output(n_clicks):
             return message
         else:
             return "Please add words to be translated and click Submit."
+    return ""
+
+
+@callback(
+    Output('clear-status', 'children'),
+    Input('reset-button', 'n_clicks')   
+)
+def clear_output(n_clicks):
+    if n_clicks > 0 and hasattr(translator_pipe, 'new_words_df'):
+        if len(translator_pipe.new_words_df)> 0:
+            translator_pipe.clear_new_words()
+            return "Reset successful."
     return ""

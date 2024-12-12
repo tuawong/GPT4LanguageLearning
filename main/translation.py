@@ -325,6 +325,7 @@ class TranslationPipeline:
     def __init__(self, gsheet_name, worksheet_name):
         self.gsheet_name = gsheet_name
         self.worksheet_name = worksheet_name
+        self.new_words_df = pd.DataFrame()
     
     def translation_module(self, word_list, translation_model="gpt-4o", rarity_model="gpt-4o-mini", temp=0.7, replace_new_words=True):
         ## Generate words translation
@@ -348,10 +349,9 @@ class TranslationPipeline:
         word_rarity_df = parse_translation_response(rarity_response.choices[0].message.content)
         newwords_df = pd.merge(newwords_df, word_rarity_df, on='Word', how='left')
 
-        if not (replace_new_words) and hasattr(self, 'new_words_df'):
+        if not (replace_new_words) and len(self.new_words_df) > 0:
             orig_new_words_df = self.new_words_df.copy()
 
-            print(f"Original New Words: {orig_new_words_df}")
             if len(orig_new_words_df) > 0:
                 orig_new_words_df = orig_new_words_df.loc[~orig_new_words_df.Word.isin(newwords_df.Word)]
             self.new_words_df = pd.concat([orig_new_words_df, newwords_df])
