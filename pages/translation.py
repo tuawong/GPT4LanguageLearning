@@ -55,10 +55,14 @@ layout = dbc.Container(
             dbc.Row(
                 dbc.Col(
                     dash_table.DataTable(
+                        #columns=(
+                        #    [{'id': p, 'name': p} for p in df.columns]
+                        #),
                         data=df.to_dict('records'), 
                         page_size=50, 
                         sort_action="native",
                         editable=True,
+                        row_deletable=True,
                         id='vocab-datatable',
                         style_cell={
                             "textAlign": "center",  # Align text to the center
@@ -85,24 +89,27 @@ layout = dbc.Container(
 
 # Callback to update output text on button click
 @callback(
-    Output(component_id='vocab-datatable', component_property='data'),
+    [Output(component_id='vocab-datatable', component_property='data'),
+    Output(component_id='vocab-datatable', component_property='columns')],
     Input('submit-button', 'n_clicks'),     
     State('word-list', 'value')           
 )
 def run_translation(n_clicks, word_list):
     if n_clicks > 0 and word_list:
         translator_pipe.translation_module(word_list, temp=0.7, replace_new_words=False)
-    return translator_pipe.new_words_df.to_dict('records')
+    return translator_pipe.new_words_df.to_dict('records'), [{"name": i, "id": i} for i in translator_pipe.new_words_df.columns]
 
 
 @callback(
     Output('update-status', 'children'),
-    Input('update-button', 'n_clicks')   
+    Input('update-button', 'n_clicks'),
+    State('vocab-datatable', 'data')
 )
-def update_output(n_clicks):
+def update_output(n_clicks, data_to_update):
     if n_clicks > 0 and hasattr(translator_pipe, 'new_words_df'):
-        if len(translator_pipe.new_words_df)> 0:
-            message = translator_pipe.update_module(overwrite_mode=True)
+        updated_table_df = pd.DataFrame(data_to_update)
+        if len(updated_table_df)> 0:
+            message = translator_pipe.update_module(df=updated_table_df, overwrite_mode=True)
             translator_pipe.clear_new_words()
             return message
         else:

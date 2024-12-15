@@ -68,21 +68,27 @@ layout = dbc.Container([
     dcc.Store(id="table-data-store"),
     dbc.Row(dbc.Col(
         dash_table.DataTable(
-            data=orig_df.to_dict('records'),
-            sort_action="native",  # Enable sorting
-            #filter_action="native",  # Enable filtering
-            editable=True,  # Enable cell editing
-            style_table={'overflowX': 'auto'},  # Responsive styling
-            style_cell={'textAlign': 'left'},  # Align text to the left
-            style_header={
-                'backgroundColor': '#f8f9fa',  # Light gray header background
-                'fontWeight': 'bold'
-            },
-            style_data={
-                'backgroundColor': '#ffffff',  # White background for data
-                'color': '#212529'  # Dark text color
-            },
-            page_size=50, id='dict-display'),
+                data=orig_df.to_dict('records'),
+                sort_action="native",  # Enable sorting
+                #filter_action="native",  # Enable filtering
+                editable=True,  # Enable cell editing
+                style_table={'overflowX': 'auto'},  # Responsive styling
+                style_cell={
+                    "textAlign": "center",  # Align text to the center
+                    "padding": "10px",      # Add padding to cells
+                    "fontFamily": "Arial",  # Set font
+                },
+                style_header={
+                    'backgroundColor': '#f8f9fa',  # Light gray header background
+                    'fontWeight': 'bold'
+                },
+                style_data={
+                    'backgroundColor': '#ffffff',  # White background for data
+                    'color': '#212529'  # Dark text color
+                },
+                page_size=50, 
+                id='dict-display'
+            ),
             width=12,
             className="shadow-lg p-3 mb-5 bg-white rounded"
     )),

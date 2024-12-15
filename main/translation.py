@@ -362,19 +362,23 @@ class TranslationPipeline:
     def clear_new_words(self):
         self.new_words_df = pd.DataFrame()
 
-    def update_module(self, overwrite_mode=False):
-        if hasattr(self, 'new_words_df'):
-            message = save_new_words_to_dict(
-                newwords_df = self.new_words_df,
+    def update_module(self, df=None, overwrite_mode=False):
+        if (df is None):
+            upload_df = self.new_words_df
+        elif (df is not None):
+            upload_df = df
+        else:
+            raise Exception("Run the translation module first or provide external dataset before running the update module.")
+        
+        message = save_new_words_to_dict(
+                newwords_df = upload_df,
                 gsheet_mode= True,
                 overwrite_mode = overwrite_mode,
                 gsheet_name = self.gsheet_name,
                 worksheet_name = self.worksheet_name
             )
-
-            return message
-        else:
-            raise Exception("Run the translation module first before running the update module.")
+        
+        return message
     
     def run_translation_pipeline(self, word_list, translation_model="gpt-4o", rarity_model="gpt-4o-mini", temp=0.7, overwrite_mode=False):
         self.translation_module(word_list, translation_model=translation_model, rarity_model=rarity_model, temp=temp)   
