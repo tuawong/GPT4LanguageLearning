@@ -187,7 +187,6 @@ class QuizGenerator:
         self.quiz = quiz_df
         return quiz_df
 
-
     def check_pinyin(
             self,
             pinyin_answer
@@ -294,3 +293,25 @@ class QuizGenerator:
         save_df_to_gsheet(overwrite_mode=True, df_to_save=word_dict_quiz_export, gsheet_name=gsheet_name, wks_name=wks_name)
 
         return "Quiz Result Updated"
+    
+    def output_quiz_log(
+            self, 
+            gsheet_name: str,
+            wks_name: str
+        ) -> None:
+        if not hasattr(self, 'quiz_result'):
+            raise Exception("Quiz Result not available.  Please run evaluate the quiz first.")
+        
+        quiz_log = load_dict(gsheet_mode=True, gsheet_name=gsheet_name, worksheet_name=wks_name)
+        quiz_export = self.quiz_result.copy()
+
+        if len(quiz_log) == 0:
+            quiz_log = pd.DataFrame()
+            quiz_export['Quiz Id'] = 1
+        else:
+            quiz_export['Quiz Id'] = int(quiz_log['Quiz Id'].max()) + 1
+        
+        quiz_log = pd.concat([quiz_log, quiz_export], axis=0)
+        save_df_to_gsheet(overwrite_mode=True, df_to_save=quiz_log, gsheet_name=gsheet_name, wks_name=wks_name)
+
+        return "Quiz Log Updated"

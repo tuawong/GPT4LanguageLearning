@@ -96,6 +96,7 @@ layout = dbc.Container([
                 editable=True,  # Enable cell editing
                 style_table={'overflowX': 'auto'},  # Responsive styling
                 style_cell={
+                    "fontSize": "24px", # Set font size
                     "textAlign": "center",  # Align text to the center
                     "padding": "10px",      # Add padding to cells
                     "fontFamily": "Arial",  # Set font
@@ -180,8 +181,8 @@ def handle_quiz_buttons(n_quiz_clicks, n_score_clicks, num_words, date_filter, c
                 pinyin_answer=quiz_df['Pinyin'],
                 meaning_answer=quiz_df['Meaning'],
             )
-            print(quiz_df['Meaning'])
-            print(quiz_result.head())
+            #print(quiz_df['Meaning'])
+            #print(quiz_result.head())
             display_data = quiz_result.to_dict('records')
             display_columns = [{"name": i, "id": i} for i in quiz_result.columns]
             message = "Quiz Scored!"
@@ -189,6 +190,11 @@ def handle_quiz_buttons(n_quiz_clicks, n_score_clicks, num_words, date_filter, c
             quiz_generator.update_quiz_score(
                 gsheet_name = gsheet_name, 
                 wks_name = 'Tua_List'
+            )
+
+            quiz_generator.output_quiz_log(
+                gsheet_name = gsheet_name, 
+                wks_name = 'QuizLog'
             )
 
             quiz_generator.quiz_result = None  # Reset quiz result after scoring
