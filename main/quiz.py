@@ -178,8 +178,8 @@ class QuizGenerator:
         quiz_id = pd.Series(unique_ids).sample(n=num_to_select)  
 
         quiz_df = dict_df.loc[dict_df[id_column].isin(quiz_id)]
-        quiz_answer_key = quiz_df[['Word Id', 'Word', 'Sentence', 'Pinyin', 'Pinyin Simplified']].sample(frac=1, random_state=1).reset_index(drop=True)
-        quiz_df = quiz_answer_key.drop(columns=['Pinyin', 'Pinyin Simplified'])
+        quiz_answer_key = quiz_df[['Word Id', 'Word', 'Word Category', 'Sentence', 'Sentence Pinyin', 'Pinyin', 'Pinyin Simplified']].sample(frac=1, random_state=1).reset_index(drop=True)
+        quiz_df = quiz_answer_key.drop(columns=['Pinyin', 'Pinyin Simplified', 'Sentence Pinyin'])
         quiz_df['Pinyin'] = ''
         quiz_df['Meaning'] = '' 
         
@@ -197,7 +197,7 @@ class QuizGenerator:
         answer_key_df = self.answer_key
         quiz_df = self.quiz
 
-        pinyin_eval_df = answer_key_df.loc[answer_key_df['Word Id'].isin(quiz_df['Word Id'])][['Word Id', 'Word', 'Pinyin', 'Pinyin Simplified']].reset_index (drop=True)
+        pinyin_eval_df = answer_key_df.loc[answer_key_df['Word Id'].isin(quiz_df['Word Id'])][['Word Id', 'Word', 'Pinyin', 'Pinyin Simplified', 'Sentence Pinyin']].reset_index (drop=True)
         pinyin_eval_df['Pinyin Answer'] = pinyin_answer
         pinyin_eval_df['Pinyin Simplified'] = pinyin_eval_df['Pinyin Simplified'].fillna('').apply(lambda x: x.replace(' ', '').lower().replace('5', ''))
         pinyin_eval_df['Pinyin Answer'] = pinyin_eval_df['Pinyin Answer'].fillna('').apply(lambda x: x.replace(' ', '').lower().replace('5', ''))
@@ -244,7 +244,7 @@ class QuizGenerator:
 
         outdf = pd.concat([
             self.quiz[['Word', 'Sentence']], 
-            pinyin_eval_df[['Pinyin Answer', 'Pinyin Correct', 'Pinyin Correction']], 
+            pinyin_eval_df[['Sentence Pinyin', 'Pinyin Answer', 'Pinyin Correct', 'Pinyin Correction']], 
             meaning_eval_df[['Meaning', 'Meaning Correct', 'Meaning Correction']]
             ], axis=1).set_index(pinyin_eval_df['Word Id'])
         
@@ -303,7 +303,7 @@ class QuizGenerator:
             raise Exception("Quiz Result not available.  Please run evaluate the quiz first.")
         
         quiz_log = load_dict(gsheet_mode=True, gsheet_name=gsheet_name, worksheet_name=wks_name)
-        quiz_export = self.quiz_result.copy()
+        quiz_export = self.quiz_result.drop(['Sentence', 'Sentence Pinyin'], axis=1).copy()
 
         if len(quiz_log) == 0:
             quiz_log = pd.DataFrame()
