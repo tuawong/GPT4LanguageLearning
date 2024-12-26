@@ -1,6 +1,6 @@
 from typing import List
 
-import Constants
+import main.Constants as Constants
 from  openai import OpenAI
 import os
 import numpy as np
@@ -231,7 +231,10 @@ def parse_translation_response(
     # Cleaning the DataFrame by stripping leading/trailing whitespaces from column names and data
     df.columns = df.columns.str.strip()
     df = df.map(lambda x: x.strip() if isinstance(x, str) else x)
-    df = df.loc[~df.Word.str.contains('--')]
+
+    # Remove rows with dashes
+    col_name = df.select_dtypes(include=['object']).columns[0]
+    df = df.loc[~df[col_name].str.contains('--')]
 
     col_to_keep = [col for col in df if 'Unnamed' not in col]
     df = df[col_to_keep]

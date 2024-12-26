@@ -17,10 +17,11 @@ import sys
 #        sys.path.insert(0, path)
 
 from main.translation import TranslationPipeline, load_dict
+import main.Constants as Constants
 
 # Incorporate data
-dict_sheet_name = "Tua_List"
-gsheet_name = "New Chinese Words"
+dict_sheet_name = Constants.DICT_SHEET_NAME
+gsheet_name = Constants.SHEET_NAME
 translator_pipe = TranslationPipeline(gsheet_name=gsheet_name, worksheet_name=dict_sheet_name)
 
 #df = load_dict(gsheet_mode=True, gsheet_name=gsheet_name, worksheet_name=dict_sheet_name)

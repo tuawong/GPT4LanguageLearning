@@ -6,9 +6,11 @@ from main.quiz import QuizGenerator
 import pandas as pd
 import dash_bootstrap_components as dbc
 
+import main.Constants as Constants
+
 # Incorporate data
-dict_sheet_name = "Tua_List"
-gsheet_name = "New Chinese Words"
+dict_sheet_name = Constants.DICT_SHEET_NAME
+gsheet_name = Constants.SHEET_NAME
 
 orig_df = load_dict(gsheet_mode=True, gsheet_name=gsheet_name, worksheet_name=dict_sheet_name)
 word_date = orig_df['Added Date'].drop_duplicates().sort_values().to_list()

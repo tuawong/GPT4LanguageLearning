@@ -1,6 +1,6 @@
 from typing import List
 
-import Constants
+import main.Constants as Constants
 from  openai import OpenAI
 import os
 import numpy as np

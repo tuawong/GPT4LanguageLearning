@@ -1,6 +1,6 @@
 from typing import List, Dict, Any, Tuple, Union
 
-import Constants
+import main.Constants as Constants
 from  openai import OpenAI
 import os
 import numpy as np
