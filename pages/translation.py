@@ -16,7 +16,8 @@ import sys
 #    if path and path not in sys.path:
 #        sys.path.insert(0, path)
 
-from main.translation import TranslationPipeline, load_dict
+from main.gsheets import load_dict
+from main.translation import TranslationPipeline
 import main.Constants as Constants
 
 # Incorporate data

@@ -202,7 +202,7 @@ class QuizGenerator:
         pinyin_eval_df['Pinyin Simplified'] = pinyin_eval_df['Pinyin Simplified'].fillna('').apply(lambda x: x.replace(' ', '').lower().replace('5', ''))
         pinyin_eval_df['Pinyin Answer'] = pinyin_eval_df['Pinyin Answer'].fillna('').apply(lambda x: x.replace(' ', '').lower().replace('5', ''))
         pinyin_eval_df['Pinyin Correct'] = (pinyin_eval_df['Pinyin Simplified'] == pinyin_eval_df['Pinyin Answer'])
-        pinyin_eval_df['Pinyin Correction'] = np.where(pinyin_eval_df['Pinyin Correct'], '', pinyin_eval_df['Pinyin'])
+        pinyin_eval_df['Pinyin Correction'] = np.where(pinyin_eval_df['Pinyin Correct'], '', pinyin_eval_df['Pinyin Simplified'])
         pinyin_eval_df['Pinyin Correct'] = pinyin_eval_df['Pinyin Correct'].map({True: 'yes', False: 'no'})
 
         self.pinyin_eval_df = pinyin_eval_df

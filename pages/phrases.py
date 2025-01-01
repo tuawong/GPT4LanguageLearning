@@ -8,18 +8,15 @@ import dash_bootstrap_components as dbc
 import main.Constants as Constants
 
 # Incorporate data
-dict_sheet_name = Constants.DICT_SHEET_NAME
+dict_sheet_name = Constants.PHRASE_SHEET_NAME
 gsheet_name = Constants.SHEET_NAME
 
 orig_df = load_dict(gsheet_mode=True, gsheet_name=gsheet_name, worksheet_name=dict_sheet_name)
-word_date = orig_df['Added Date'].drop_duplicates().sort_values().to_list()
-word_cat = orig_df['Word Category'].drop_duplicates().sort_values().to_list()
-word_rarity = orig_df['Word Rarity'].drop_duplicates().sort_values().to_list()
+phrase_category = orig_df['Category'].drop_duplicates().sort_values().to_list()
+phrase_date = orig_df['Added Date'].drop_duplicates().sort_values().to_list()
+phrase_complexity = orig_df['Complexity'].drop_duplicates().sort_values().to_list()
 
-cols = ['Word Id', 'Word', 'Pinyin', 'Meaning', 'Added Date', 'Word Category', 'Word Rarity', 'Type', 'Sentence', 'Sentence Pinyin', 'Sentence Meaning', 'Num_Quiz_Attempt', 'Num_Correct', 'Num_Wrong', 'Last_Quiz']
-orig_df = orig_df[cols]
-
-dash.register_page(__name__, path='/dictionary')
+dash.register_page(__name__, path='/phrases')
 
 # App layout
 layout = dbc.Container([
@@ -30,9 +27,9 @@ layout = dbc.Container([
                 dbc.CardBody([
                     html.B("Date Filter"),
                     dcc.Dropdown(
-                        options=[{'label': option, 'value': option} for option in ['All'] + word_date],
+                        options=[{'label': option, 'value': option} for option in ['All'] + phrase_date],
                         value='All',
-                        id='date-dropdown',
+                        id='phrase-date-dropdown',
                     )
                 ])
             ], className="mb-4 shadow-sm")
@@ -43,9 +40,9 @@ layout = dbc.Container([
                 dbc.CardBody([
                     html.B("Category Filter"),
                     dcc.Dropdown(
-                        options=[{'label': option, 'value': option} for option in ['All'] + word_cat],
+                        options=[{'label': option, 'value': option} for option in ['All'] + phrase_category],
                         value='All',
-                        id='category-dropdown',
+                        id='phrase-category-dropdown',
                     )
                 ])
             ], className="mb-4 shadow-sm")
@@ -54,11 +51,11 @@ layout = dbc.Container([
         dbc.Col([
             dbc.Card([
                 dbc.CardBody([
-                    html.B("Rarity Filter"),
+                    html.B("Complexity Filter"),
                     dcc.Dropdown(
-                        options=[{'label': option, 'value': option} for option in ['All'] + word_rarity],
+                        options=[{'label': option, 'value': option} for option in ['All'] + phrase_complexity],
                         value='All',
-                        id='rarity-dropdown',
+                        id='phrase-complexity-dropdown',
                     )
                 ])
             ], className="mb-4 shadow-sm")
@@ -68,17 +65,14 @@ layout = dbc.Container([
 
     html.Hr(),
     # Data table with additional margin and styling
-    dcc.Store(id="table-data-store"),
+    dcc.Store(id="phrase-table-data-store"),
     dbc.Row(dbc.Col(
         dash_table.DataTable(
                 data=orig_df.to_dict('records'),
                 sort_action="native",  # Enable sorting
                 #filter_action="native",  # Enable filtering
                 editable=True,  # Enable cell editing
-                style_table={
-                    'overflowX': 'auto',
-                    'width': '100%',  
-                },  
+                style_table={'overflowX': 'auto'},  # Responsive styling
                 style_cell={
                     "textAlign": "center",  # Align text to the center
                     "padding": "10px",      # Add padding to cells
@@ -92,8 +86,8 @@ layout = dbc.Container([
                     'backgroundColor': '#ffffff',  # White background for data
                     'color': '#212529'  # Dark text color
                 },
-                page_size=25, 
-                id='dict-display'
+                page_size=20, 
+                id='phrase-dict-display'
             ),
             width=12,
             className="shadow-lg p-3 mb-5 bg-white rounded"
@@ -101,29 +95,29 @@ layout = dbc.Container([
 ], fluid=True)
 
 @callback(
-    Output(component_id='table-data-store', component_property='data'),
+    Output(component_id='phrase-table-data-store', component_property='data'),
     Input('reload-button', 'n_clicks')
 )
 def reload_table(n_clicks):
     if n_clicks > 0:
         df = load_dict(gsheet_mode=True, gsheet_name=gsheet_name, worksheet_name=dict_sheet_name)
-        return df[cols].to_dict('records')
+        return df.to_dict('records')
     else:
-        return orig_df[cols].to_dict('records')
+        return orig_df.to_dict('records')
 
 # Add controls to build the interaction
 @callback(
-    Output(component_id='dict-display', component_property='data'),
-    [Input(component_id='table-data-store', component_property='data'),
-     Input(component_id='date-dropdown', component_property='value'),
-     Input(component_id='category-dropdown', component_property='value'),
-     Input(component_id='rarity-dropdown', component_property='value')]
+    Output(component_id='phrase-dict-display', component_property='data'),
+    [Input(component_id='phrase-table-data-store', component_property='data'),
+     Input(component_id='phrase-date-dropdown', component_property='value'),
+     Input(component_id='phrase-category-dropdown', component_property='value'),
+     Input(component_id='phrase-complexity-dropdown', component_property='value')]
 )
 def slice_table(
     table_data: pd.DataFrame,
     date_filter: str = None,
     category_filter: str = None, 
-    rarity_filter: str = None
+    complexity_filter: str = None
     ) -> pd.Series:
     out_table = pd.DataFrame(table_data)
     if date_filter!= 'All':
@@ -132,12 +126,12 @@ def slice_table(
     if category_filter != 'All':
         if type(category_filter) == str:
             category_filter = [category_filter]
-            out_table = out_table[out_table['Word Category'].isin(category_filter)]
+            out_table = out_table[out_table['Category'].isin(category_filter)]
 
-    if rarity_filter != 'All':
-        if type(rarity_filter) == str:
-            rarity_filter = [rarity_filter]
-            out_table = out_table[out_table['Word Rarity'].isin(rarity_filter)]
+    if complexity_filter != 'All':
+        if type(complexity_filter) == str:
+            complexity_filter = [complexity_filter]
+            out_table = out_table[out_table['Complexity'].isin(complexity_filter)]
 
     return out_table.to_dict('records')
 
