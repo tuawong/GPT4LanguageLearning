@@ -26,10 +26,12 @@ client = OpenAI(
 
 
 
+
 def get_prompt_to_gen_phrases(
     situation: str = "",
     num_phrases: int = 5,
     complexity: str = "Low",
+    tone: str = "Polite",
     existing_phrases: List[str] = None
     ):
     prompt = f'''
@@ -41,7 +43,8 @@ def get_prompt_to_gen_phrases(
     Situation: {situation}
     Number of phrase to generate: {num_phrases}
     Complexity: {complexity}
-
+    Tone: {tone}
+    
     The output should be a table with the following columns. 
     1) Line:  In simplified Chinese.  The phrase generated should be relevant to the situation.
     2) Pinyin: Pinyin associated with the phrase
@@ -49,11 +52,31 @@ def get_prompt_to_gen_phrases(
     4) Response:  A line that can be said in response to the phrase
     5) Response Pinyin:  Pinyin associated with response
     6) Response Meaning:  Meaning of the response
-    7) Complexity:  Complexity of the phrase to generate based on the input parameters.  Can be...
-    -  Low (Used everyday.  Easily learnt by first time Mandarin speaker)
-    -  Medium (More contextual conversations with more details that are more common between natural Mandarin speakers)
-    -  High (More formal/detailed/rare conversation that might not be used everyday)
+    7) Complexity:  Complexity of content of the phrase to generate based on the input parameters.  Can be...
+    -  Low (Short basic conversation, easily learnt by first time Mandarin speaker.  Keep the line less than 10 characters)
+    -  Medium (More detailed conversation that might be used in everyday life)
+    -  High (More formal/rare conversation that might not be used everyday.  Should be longer than 10 characters)
     8) Category:  Category of the phrase such as Daily Life, Cooking, Movies and Entertainment, Date night, Classroom conversation
+    9) Tone:  Tone of the phrase.  Can be Polite or Casual.  Polite used for work or formal situations for speaking with strangers and older people.  
+    Casual is typically for everyday use with close friends, make it more conversational. 
+    The example for tone is provided below. 
+
+    Polite phrase: 你好，请问你需要帮助吗？
+    Casual phrase: 需要帮忙吗？
+
+    Polite phrase: 麻烦你稍等一下，我马上过来。
+    Casual phrase: 等一下，我马上来。
+
+    Polite phrase: 谢谢你的帮助，真是太感谢了。
+    Casual phrase: 谢啦，帮了大忙！
+
+    Polite phrase: 不好意思，能再说一遍吗？
+    Casual phrase: 啊？再说一遍！
+
+    Polite phrase: 我们要先安排一下时间表。
+    Casual phrase: 我们先定时间吧。
+
+    Do note that complexity refers to the content of phrase, while tone refers to the formality of the phrase.
 
     Here are the existing categories.  Please map the new phrases to one of these categories.  
     If none of these categories fit, please create a new category.
@@ -70,7 +93,8 @@ def get_prompt_to_gen_phrases(
 
 def get_prompt_to_respond(
     input_phrases: str,
-    complexity: str = "Low"
+    complexity: str = "Low",
+    tone: str = "Polite"
     ): 
     return f'''
     Can you generate some useful responses to the input phrase in Mandarin base on the following situation.  
@@ -80,7 +104,7 @@ def get_prompt_to_respond(
     Parameters
     Input Phrases: {input_phrases}
     Complexity: {complexity}
-
+    Tone: {tone}
 
     The output should be a table with the following columns. 
     1) Line: The line provided in Input Phrases. 
@@ -89,12 +113,31 @@ def get_prompt_to_respond(
     4) Response:  A line that can be said in response to the phrase
     5) Response Pinyin:  Pinyin associated with response
     6) Response Meaning:  Meaning of the response
-    7) Complexity:  Complexity of the phrase to generate based on the input parameters.  Can be...
-    -  Low (Used everyday.  Easily learnt by first time Mandarin speaker)
-    -  Medium (More contextual conversations with more details that are more common between natural Mandarin speakers)
-    -  High (More formal/detailed/rare conversation that might not be used everyday)
-    8) Category:  Category of the phrase such as Daily Life, Cooking, Movies and Entertainment, Date night, Classroom conversation, and so on  
+    7) Complexity:  Complexity of content of the phrase to generate based on the input parameters.  Can be...
+    -  Low (Short basic conversation, easily learnt by first time Mandarin speaker.  Keep the line less than 10 characters)
+    -  Medium (More detailed conversation that might be used in everyday life)
+    -  High (More formal/rare conversation that might not be used everyday.  Should be longer than 10 characters)
+    8) Category:  Category of the phrase such as Daily Life, Cooking, Movies and Entertainment, Date night, Classroom conversation
+    9) Tone:  Tone of the phrase.  Can be Polite or Casual.  Polite used for work or formal situations for speaking with strangers and older people.  
+    Casual is typically for everyday use with close friends, make it more conversational. 
+    The example for tone is provided below. 
 
+    Polite phrase: 你好，请问你需要帮助吗？
+    Casual phrase: 需要帮忙吗？
+
+    Polite phrase: 麻烦你稍等一下，我马上过来。
+    Casual phrase: 等一下，我马上来。
+
+    Polite phrase: 谢谢你的帮助，真是太感谢了。
+    Casual phrase: 谢啦，帮了大忙！
+
+    Polite phrase: 不好意思，能再说一遍吗？
+    Casual phrase: 啊？再说一遍！
+
+    Polite phrase: 我们要先安排一下时间表。
+    Casual phrase: 我们先定时间吧。
+
+    Do note that complexity refers to the content of phrase, while tone refers to the formality of the phrase.
     Here are the existing categories.  Please map the new phrases to one of these categories.  
     If none of these categories fit, please create a new category.
     {existing_cat}
@@ -131,6 +174,7 @@ class PhraseGenerationPipeline:
             situation, 
             num_phrases, 
             complexity, 
+            tone = "Polite",
             existing_phrases=[], 
             translation_model="gpt-4o",
             temp=0.7
@@ -140,6 +184,7 @@ class PhraseGenerationPipeline:
                 situation = situation,
                 num_phrases = num_phrases,
                 complexity = complexity,
+                tone = tone,
                 existing_phrases=existing_phrases
                 ),
             model=translation_model, 
@@ -153,11 +198,12 @@ class PhraseGenerationPipeline:
             self, 
             input_phrases,
             complexity, 
+            tone = "Polite",
             translation_model="gpt-4o", 
             temp=0.7
             ):
         phrase_gen_response =  get_completion(
-            prompt = get_prompt_to_respond(input_phrases, complexity=complexity),
+            prompt = get_prompt_to_respond(input_phrases, complexity=complexity, tone=tone),
             model=translation_model, 
             temperature=temp)
         self.phrase_gen_response = phrase_gen_response
@@ -189,11 +235,20 @@ class PhraseGenerationPipeline:
             situation,
             num_phrases, 
             complexity, 
+            tone = "Polite",
             existing_phrases=[], 
             translation_model="gpt-4o", 
             temp=0.7
         ):
-        self.phrase_generation_module(situation, num_phrases, complexity, existing_phrases, translation_model, temp)
+        self.phrase_generation_module(
+            situation=situation, 
+            num_phrases=num_phrases, 
+            complexity=complexity,
+            tone=tone, 
+            existing_phrases=existing_phrases, 
+            translation_model=translation_model, 
+            temp=temp
+            )
         message = self.update_module()
         return message
     
@@ -201,9 +256,16 @@ class PhraseGenerationPipeline:
             self, 
             input_phrases, 
             complexity, 
+            tone = "Polite",
             translation_model="gpt-4o", 
             temp=0.7
         ):
-        self.phrase_response_module(input_phrases, complexity, translation_model, temp)
+        self.phrase_response_module(
+            input_phrases = input_phrases, 
+            complexity = complexity, 
+            tone = tone,
+            translation_model = translation_model, 
+            temp = temp
+            )
         message = self.update_module()
         return message

@@ -109,6 +109,16 @@ layout = dbc.Container([
                         id= "phrase-complexity",
                     )
                 ])
+            ], className="mb-4 shadow-sm"),
+            dbc.Card([
+                dbc.CardBody([
+                    html.B("Tone"),
+                    dcc.Dropdown(
+                        options=[{'label': option, 'value': option} for option in ['Polite', 'Casual']],
+                        value='All',
+                        id= "phrase-tone",
+                    )
+                ])
             ], className="mb-4 shadow-sm")
         ], width=4),
     ], className="mb-5"),
@@ -175,19 +185,20 @@ layout = dbc.Container([
     Input('gen-response-button', 'n_clicks'),  
     State('phrase-input-situation', 'value'),            
     State('phrase-num', 'value'),            
-    State('phrase-complexity', 'value'),
+    State('phrase-complexity', 'value'),   
+    State('phrase-tone', 'value'),
     State('phrase-input', 'value'),
 )
-def run_phrase_gen(n_clicks_gen, n_clicks_response, situation, num_phrases, complexity, input_phrases):
+def run_phrase_gen(n_clicks_gen, n_clicks_response, situation, num_phrases, complexity, tone, input_phrases):
     ctx = callback_context  # Get the context of which button was clicked
 
     button_id = ctx.triggered[0]["prop_id"].split(".")[0]  # Get the ID of the clicked button
 
     if button_id == "gen-phrase-button":
-        phrase_generator.phrase_generation_module(situation, num_phrases, complexity, existing_phrases=existing_phrases, translation_model = 'gpt-4o', temp=0.7)
+        phrase_generator.phrase_generation_module(situation, num_phrases, complexity, tone, existing_phrases=existing_phrases, translation_model = 'gpt-4o', temp=0.7)
 
     if button_id == "gen-response-button":
-        phrase_generator.phrase_response_module(input_phrases, complexity, translation_model = 'gpt-4o', temp=0.7)
+        phrase_generator.phrase_response_module(input_phrases, complexity, tone, translation_model = 'gpt-4o', temp=0.7)
 
     return phrase_generator.new_phrase_df.to_dict('records'), [{"name": i, "id": i} for i in phrase_generator.new_phrase_df.columns]
 

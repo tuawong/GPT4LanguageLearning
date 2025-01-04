@@ -36,7 +36,7 @@ layout = dbc.Container([
                     )
                 ])
             ], className="mb-4 shadow-sm")
-        ], width=4),
+        ], width=3),
 
         dbc.Col([
             dbc.Card([
@@ -49,7 +49,7 @@ layout = dbc.Container([
                     )
                 ])
             ], className="mb-4 shadow-sm")
-        ], width=4),
+        ], width=3),
 
         dbc.Col([
             dbc.Card([
@@ -62,8 +62,28 @@ layout = dbc.Container([
                     )
                 ])
             ], className="mb-4 shadow-sm")
-        ], width=4),
-        dbc.Col([dbc.Button('Reload Table', id='reload-button', n_clicks=0, color='primary')]),
+        ], width=3),
+
+        #Word Filter with space in between
+        dbc.Col([
+            dbc.Card([
+                dbc.CardBody([
+                    html.B("Word Filter"),
+                    dcc.Input(
+                        id= "word-dict-filter",
+                        type='text',
+                        value='',
+                        placeholder=None,
+                        style={'width': '100%', 'marginBottom': '10px'}  # Full width with margin below
+                    ),
+                    ])
+                ], className="mb-4 shadow-sm")
+        ], width=3, className="mb-5"),
+
+        # Button to reload table
+        dbc.Row([
+            dbc.Col([dbc.Button('Reload Table', id='reload-button', n_clicks=0, color='primary')])
+        ]),
     ], className="mb-5"),  # Space between filters and table
 
     html.Hr(),
@@ -117,13 +137,16 @@ def reload_table(n_clicks):
     [Input(component_id='table-data-store', component_property='data'),
      Input(component_id='date-dropdown', component_property='value'),
      Input(component_id='category-dropdown', component_property='value'),
-     Input(component_id='rarity-dropdown', component_property='value')]
+     Input(component_id='rarity-dropdown', component_property='value'),
+     Input(component_id='word-dict-filter', component_property='value')
+     ]
 )
 def slice_table(
     table_data: pd.DataFrame,
     date_filter: str = None,
     category_filter: str = None, 
-    rarity_filter: str = None
+    rarity_filter: str = None,
+    word_filter: str = None
     ) -> pd.Series:
     out_table = pd.DataFrame(table_data)
     if date_filter!= 'All':
@@ -139,5 +162,10 @@ def slice_table(
             rarity_filter = [rarity_filter]
             out_table = out_table[out_table['Word Rarity'].isin(rarity_filter)]
 
+    if word_filter is not None and word_filter != '':
+        if type(word_filter) == str:
+            out_table = out_table.loc[out_table.Word.str.contains(word_filter)]
+
     return out_table.to_dict('records')
+
 

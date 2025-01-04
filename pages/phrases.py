@@ -12,6 +12,8 @@ dict_sheet_name = Constants.PHRASE_SHEET_NAME
 gsheet_name = Constants.SHEET_NAME
 
 orig_df = load_dict(gsheet_mode=True, gsheet_name=gsheet_name, worksheet_name=dict_sheet_name)
+orig_df = orig_df[['Phrase Id', 'Added Date', 'Complexity', 'Category', 'Tone', 'Line', 'Pinyin', 'Meaning', 'Response', 'Response Pinyin','Response Meaning']]
+
 phrase_category = orig_df['Category'].drop_duplicates().sort_values().to_list()
 phrase_date = orig_df['Added Date'].drop_duplicates().sort_values().to_list()
 phrase_complexity = orig_df['Complexity'].drop_duplicates().sort_values().to_list()
