@@ -227,8 +227,8 @@ def save_new_words_to_dict(
     else:
         chinese_dict = pd.read_csv(dict_path) 
     
-    max_id = pd.to_numeric(chinese_dict['Word Id'], errors='coerce').max()
-    newwords_df['Word Id'] = [num + max_id for num in range(1, len(newwords_df) + 1)]
+    max_id = pd.to_numeric(chinese_dict['Word Id'].apply(lambda x: x.replace('D','')), errors='coerce').max()
+    newwords_df['Word Id'] = ['D'+str(num + max_id).zfill(6) for num in range(1, len(newwords_df) + 1)]
     newwords_df['Num_Quiz_Attempt'] = 0
     newwords_df['Num_Correct'] = 0
     newwords_df['Num_Wrong'] = 0

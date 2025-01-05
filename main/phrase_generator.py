@@ -148,12 +148,17 @@ def save_new_phrase_to_dict(
     new_phrase_df: pd.DataFrame,
     gsheet_name: str,
     worksheet_name: str,
-):
-    phrase_dict = load_dict(gsheet_mode=True, gsheet_name=gsheet_name, worksheet_name=worksheet_name)
-    max_id = pd.to_numeric(phrase_dict['Phrase Id'], errors='coerce').max()
-    new_phrase_df['Phrase Id'] = [num + max_id for num in range(1, len(new_phrase_df) + 1)]
+    overwrite_mode=False
+):  
+    if not overwrite_mode:
+        phrase_dict = load_dict(gsheet_mode=True, gsheet_name=gsheet_name, worksheet_name=worksheet_name)
+        max_id = pd.to_numeric(phrase_dict['Phrase Id'].apply(lambda x: x.replace('P', '')), errors='coerce').max()
+        new_phrase_df['Phrase Id'] = ['P' + str(num + max_id).zfill(6) for num in range(1, len(new_phrase_df) + 1)]
 
-    phrase_df_to_save = pd.concat([phrase_dict, new_phrase_df], ignore_index=True)
+        phrase_df_to_save = pd.concat([phrase_dict, new_phrase_df], ignore_index=True)
+    else:
+        phrase_df_to_save = new_phrase_df
+        
     save_df_to_gsheet(gsheet_name, worksheet_name, pd.DataFrame(), overwrite_mode=True)
     save_df_to_gsheet(gsheet_name, worksheet_name, phrase_df_to_save, overwrite_mode=True)
 
