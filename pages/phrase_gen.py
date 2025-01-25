@@ -60,8 +60,7 @@ layout = dbc.Container([
                     html.Div(id='number-output', style={'marginTop': '5px', 'color': 'gray'})  # To display input feedback
                 ])
             ], className="mb-4 shadow-sm"),
-        ], width=4),
-        
+        ], width=3),
         dbc.Col([
             # Input box for number
             dbc.Card([
@@ -78,8 +77,15 @@ layout = dbc.Container([
                     html.Div(id='number-output', style={'marginTop': '5px', 'color': 'gray'})  # To display input feedback
                 ])
             ], className="mb-4 shadow-sm"),
-        ], width=4),
-
+        ], width=3),
+        dbc.Col([
+            dbc.ButtonGroup([
+                dbc.Button('Generate Phrase', id='gen-phrase-button', n_clicks=0, color='primary'),
+            ])
+        ], width=0.8),
+    ]),
+    
+    dbc.Row([
         dbc.Col([
             # Input box for number
             dbc.Card([
@@ -95,8 +101,39 @@ layout = dbc.Container([
                     html.Div(id='number-output', style={'marginTop': '5px', 'color': 'gray'})  # To display input feedback
                 ])
             ], className="mb-4 shadow-sm"),
-        ], width=4),
+        ], width=3),
+        dbc.Col([
+            dbc.ButtonGroup([
+                dbc.Button('Generate Response', id='gen-response-button', n_clicks=0, color='secondary'),
+            ])
+        ], width=0.8),
     ]),
+
+    dbc.Row([
+        dbc.Col([
+            # Input box for number
+            dbc.Card([
+                dbc.CardBody([
+                    html.B("Input Translation"), 
+                    dcc.Input(
+                        id= "translation-input",
+                        type='text',
+                        value='',
+                        placeholder=None,
+                        style={'width': '100%', 'marginBottom': '10px'}  # Full width with margin below
+                    ),
+                    html.Div(id='number-output', style={'marginTop': '5px', 'color': 'gray'})  # To display input feedback
+                ])
+            ], className="mb-4 shadow-sm"),
+        ], width=3),
+        dbc.Col([
+            dbc.ButtonGroup([
+                dbc.Button('Generate Translation', id='gen-translation-button', n_clicks=0, color='primary'),
+            ])
+        ], width=0.8),
+    ]),
+    
+    
     # Filter dropdowns with space in between
     dbc.Row([
         dbc.Col([
@@ -109,7 +146,9 @@ layout = dbc.Container([
                         id= "phrase-complexity",
                     )
                 ])
-            ], className="mb-4 shadow-sm"),
+            ], className="mb-4 shadow-sm")
+        ], width=3),
+        dbc.Col([
             dbc.Card([
                 dbc.CardBody([
                     html.B("Tone"),
@@ -120,17 +159,8 @@ layout = dbc.Container([
                     )
                 ])
             ], className="mb-4 shadow-sm")
-        ], width=4),
+        ], width=3),
     ], className="mb-5"),
-
-    dbc.Row([
-        dbc.Col([
-            dbc.ButtonGroup([
-                    dbc.Button('Generate Phrase', id='gen-phrase-button', n_clicks=0, color='primary'),
-                    dbc.Button('Generate Response', id='gen-response-button', n_clicks=0, color='secondary'),
-                ])
-            ]),
-        ]),
 
     html.Hr(),
     # Data table with additional margin and styling
@@ -183,13 +213,15 @@ layout = dbc.Container([
     Output(component_id='phrase-datatable', component_property='columns')],
     Input('gen-phrase-button', 'n_clicks'),  
     Input('gen-response-button', 'n_clicks'),  
+    Input('gen-translation-button', 'n_clicks'),  
     State('phrase-input-situation', 'value'),            
     State('phrase-num', 'value'),            
     State('phrase-complexity', 'value'),   
     State('phrase-tone', 'value'),
     State('phrase-input', 'value'),
+    State('translation-input', 'value'),
 )
-def run_phrase_gen(n_clicks_gen, n_clicks_response, situation, num_phrases, complexity, tone, input_phrases):
+def run_phrase_gen(n_clicks_gen, n_clicks_response, n_clicks_translation, situation, num_phrases, complexity, tone, input_phrases, input_translation):
     ctx = callback_context  # Get the context of which button was clicked
 
     button_id = ctx.triggered[0]["prop_id"].split(".")[0]  # Get the ID of the clicked button
@@ -199,6 +231,9 @@ def run_phrase_gen(n_clicks_gen, n_clicks_response, situation, num_phrases, comp
 
     if button_id == "gen-response-button":
         phrase_generator.phrase_response_module(input_phrases, complexity, tone, translation_model = 'gpt-4o', temp=0.7)
+
+    if button_id == "gen-translation-button":
+        phrase_generator.phrase_translate_module(input_translation, complexity, tone, translation_model = 'gpt-4o', temp=0.7)
 
     return phrase_generator.new_phrase_df.to_dict('records'), [{"name": i, "id": i} for i in phrase_generator.new_phrase_df.columns]
 

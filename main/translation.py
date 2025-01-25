@@ -30,6 +30,32 @@ cat = df['Word Category'].drop_duplicates().values
 #       'Contrast', 'Thought', 'Relationship', 'Food', 'Weather']
 
 
+def get_prompt_for_word_comparison(word1, word2):
+    chinese_prompt =  f"""
+    For the following word pair, please output the following as a one row in a table.  There should be the following columns in table related to the word.  
+    1) Word1: The first word provided.
+    2) Word1 Pinyin: The pinyin for the first word.
+    3) Word2: The second word provided.
+    4) Word2 Pinyin: The pinyin for the second word.
+    5) Meaning: The shared meaning or general definition of the two words.
+    6) Part of Speech 1: The part of speech for the first word (e.g., noun, verb, adjective).
+    7) Part of Speech 2: The part of speech for the second word (e.g., noun, verb, adjective).
+    8) Word 1 Nuance: A description of nuances or usage contexts specific to the first word.
+    9) Word 2 Nuance: A description of nuances or usage contexts specific to the second word.
+    10) Word 1 Tone: Indicates the tone or register (e.g., casual, formal) typically associated with the first word.
+    11) Word 2 Tone: Indicates the tone or register (e.g., casual, formal) typically associated with the second word.
+    12) Word 1 Example: An example sentence using the first word.
+    13) Word 1 Example Pinyin: The pinyin for the example sentence using the first word.
+    14) Word 1 Example Meaning: The English translation of the example sentence using the first word.
+    15) Word 2 Example: An example sentence using the second word.
+    16) Word 2 Example Pinyin: The pinyin for the example sentence using the second word.
+    17) Word 2 Example Meaning: The English translation of the example sentence using the second word.
+
+    No textual output if is allowed.  The table should be the only output.
+    """
+
+    return chinese_prompt
+
 
 
 def get_prompt_for_chinese_translation(chinese_words, existing_categories=cat):
