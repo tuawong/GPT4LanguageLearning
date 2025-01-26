@@ -305,11 +305,8 @@ class QuizGenerator:
         quiz_log = load_dict(gsheet_mode=True, gsheet_name=gsheet_name, worksheet_name=wks_name)
         quiz_export = self.quiz_result.drop(['Sentence', 'Sentence Pinyin'], axis=1).copy()
 
-        if len(quiz_log) == 0:
-            quiz_log = pd.DataFrame()
-            quiz_export['Quiz Id'] = 1
-        else:
-            quiz_export['Quiz Id'] = int(quiz_log['Quiz Id'].max()) + 1
+        max_id = pd.to_numeric(quiz_log['Quiz Id'].apply(lambda x: x.replace('QW','')), errors='coerce').max()
+        quiz_export['Quiz Id'] = ['QW'+str(1 + max_id).zfill(6) for _ in range(1, len(quiz_export) + 1)]
         
         quiz_log = pd.concat([quiz_log, quiz_export], axis=0)
         save_df_to_gsheet(overwrite_mode=True, df_to_save=quiz_log, gsheet_name=gsheet_name, wks_name=wks_name)
