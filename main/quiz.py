@@ -175,7 +175,7 @@ class QuizGenerator:
 
         unique_ids = dict_df[id_column].unique()
         num_to_select = min(num_words, len(unique_ids))
-        quiz_id = pd.Series(unique_ids).sample(n=num_to_select)  
+        quiz_id = pd.Series(unique_ids).sample(n=num_to_select, replace=False)
 
         quiz_df = dict_df.loc[dict_df[id_column].isin(quiz_id)]
         quiz_answer_key = quiz_df[['Word Id', 'Word', 'Word Category', 'Sentence', 'Sentence Pinyin', 'Pinyin', 'Pinyin Simplified']].sample(frac=1, random_state=1).reset_index(drop=True)

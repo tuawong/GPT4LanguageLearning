@@ -331,8 +331,20 @@ class TranslationPipeline:
         rarity_response = (
             get_completion(
                 prompt=get_prompt_for_rarity_classification(word_list), model=rarity_model, temperature=temp))
-
         word_rarity_df = parse_response_table(rarity_response.choices[0].message.content)
+
+        max_retries = 3
+        for retry in range(max_retries):
+            if word_rarity_df['Word Rarity'].apply(len).min() > 0: 
+                break
+            else:
+                print(f"Retrying rarity classification for {word_list} due to empty Rarity column. Attempt {retry + 1}/{max_retries}")
+                time.sleep(1) 
+                rarity_response = (
+                    get_completion(
+                        prompt=get_prompt_for_rarity_classification(word_list), model=rarity_model, temperature=temp))
+                word_rarity_df = parse_response_table(rarity_response.choices[0].message.content)
+
         newwords_df = pd.merge(newwords_df, word_rarity_df, on='Word', how='left')
 
         if not (replace_new_words) and len(self.new_words_df) > 0:
