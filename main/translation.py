@@ -335,7 +335,7 @@ class TranslationPipeline:
 
         max_retries = 3
         for retry in range(max_retries):
-            if word_rarity_df['Word Rarity'].apply(len).min() > 0: 
+            if word_rarity_df['Word Rarity'].isna().min() > 0: 
                 break
             else:
                 print(f"Retrying rarity classification for {word_list} due to empty Rarity column. Attempt {retry + 1}/{max_retries}")
