@@ -14,6 +14,7 @@ from datetime import datetime
 from main.gsheets import load_dict, save_df_to_gsheet, format_gsheet
 import main.Constants as Constants
 from main.utils import get_completion, parse_response_table
+from sql import sql_update_worddict
 
 # Incorporate data
 dict_sheet_name = Constants.DICT_SHEET_NAME
@@ -335,7 +336,7 @@ class TranslationPipeline:
 
         max_retries = 3
         for retry in range(max_retries):
-            if word_rarity_df['Word Rarity'].isna().min() > 0: 
+            if word_rarity_df['Word Rarity'].notna().min() > 0: 
                 break
             else:
                 print(f"Retrying rarity classification for {word_list} due to empty Rarity column. Attempt {retry + 1}/{max_retries}")
@@ -360,7 +361,7 @@ class TranslationPipeline:
     def clear_new_words(self):
         self.new_words_df = pd.DataFrame()
 
-    def update_module(self, df=None, overwrite_mode=False):
+    def update_module(self, df=None, overwrite_mode=False, gsheet_mode=False):
         if (df is None):
             upload_df = self.new_words_df
         elif (df is not None):
@@ -368,17 +369,20 @@ class TranslationPipeline:
         else:
             raise Exception("Run the translation module first or provide external dataset before running the update module.")
         
-        message = save_new_words_to_dict(
+        if gsheet_mode:
+            message = save_new_words_to_dict(
                 newwords_df = upload_df,
                 gsheet_mode= True,
                 overwrite_mode = overwrite_mode,
                 gsheet_name = self.gsheet_name,
                 worksheet_name = self.worksheet_name
             )
+        else:
+            message = sql_update_worddict(upload_df)
         
         return message
     
-    def run_translation_pipeline(self, word_list, translation_model="gpt-4o", rarity_model="gpt-4o-mini", temp=0.7, overwrite_mode=False):
+    def run_translation_pipeline(self, word_list, translation_model="gpt-4o", rarity_model="gpt-4o-mini", temp=0.7, gsheet_mode=False):
         self.translation_module(word_list, translation_model=translation_model, rarity_model=rarity_model, temp=temp)   
-        message = self.update_module(overwrite_mode=overwrite_mode)
+        message = self.update_module(gsheet_mode=gsheet_mode)
         return message

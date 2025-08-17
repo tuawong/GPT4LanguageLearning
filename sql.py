@@ -1,9 +1,34 @@
 from sqlalchemy.orm import Session
-from sqlalchemy import select
+from sqlalchemy import select, text
 from sqlalchemy.exc import SQLAlchemyError
 from database import engine
 from models import WordDict, QuizAgg
 import pandas as pd
+from typing import List
+
+def count_overlap_word(new_word_list: List) -> tuple[int,int]:
+    """
+    Count the number of overlapping words between the new words and the existing words in the database.
+    To generate message for the user.
+    """ 
+    overlap_word = 0
+    chunk_size = 500
+    new_word_list = list(set(new_word_list))
+    with engine.begin() as conn:
+        for i in range(0, len(new_word_list), chunk_size):
+            chunk = new_word_list[i:i+chunk_size]
+            placeholders = ",".join([f":w{j}" for j in range(len(chunk))])
+            params = {f"w{j}": v for j, v in enumerate(chunk)}
+            sql = text(f"""
+                SELECT COUNT(DISTINCT word)
+                FROM WordDict
+                WHERE word IN ({placeholders})
+            """)
+            overlap_word += conn.execute(sql, params).scalar() or 0
+
+    dedup = len(new_word_list)
+    add_word = dedup - overlap_word
+    return overlap_word, add_word
 
 
 def sql_update_worddict(df: pd.DataFrame):
@@ -68,8 +93,12 @@ def sql_update_worddict(df: pd.DataFrame):
                 session.bulk_insert_mappings(QuizAgg, quizagg_init)
             
             session.commit()
-
+        
+        overlap_count, add_count = count_overlap_word(df['word'].tolist())
+        message = f"Overwrite mode enabled.  Replacing {overlap_count} words and {add_count} new words added."
+        return message
+    
     except SQLAlchemyError as e:
-        print("Replace-by-word transaction failed:", e)
-        raise 
+        message = f"Replace-by-word transaction failed: {e}"
+        return message 
  
