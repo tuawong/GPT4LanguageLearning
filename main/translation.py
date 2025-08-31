@@ -14,7 +14,7 @@ from datetime import datetime
 from main.gsheets import load_dict, save_df_to_gsheet, format_gsheet
 import main.Constants as Constants
 from main.utils import get_completion, parse_response_table
-from sql import sql_update_worddict
+from main.sql import sql_update_worddict
 
 # Incorporate data
 dict_sheet_name = Constants.DICT_SHEET_NAME

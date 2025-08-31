@@ -13,6 +13,7 @@ from datetime import datetime
 
 from main.gsheets import load_dict, save_df_to_gsheet, format_gsheet
 from main.utils import get_completion, parse_response_table
+from main.sql import sql_update_phrasedict
 
 gsheet_name = Constants.SHEET_NAME
 phrasesheet_name = Constants.PHRASE_SHEET_NAME
@@ -286,19 +287,21 @@ class PhraseGenerationPipeline:
     def clear_new_phrases(self):
         self.new_phrase_df = pd.DataFrame() 
     
-    def update_module(self, df=None):
+    def update_module(self, df=None, gsheet_mode=False):
         if (df is None):
             upload_df = self.new_phrase_df
         elif (df is not None):
             upload_df = df
         else:
             raise Exception("Run the phrase generation module first or provide external dataset before running the update module.")
-        
-        message = save_new_phrase_to_dict(
-                new_phrase_df = upload_df,
-                gsheet_name = self.gsheet_name,
-                worksheet_name = self.worksheet_name
-            )
+        if gsheet_mode:
+            message = save_new_phrase_to_dict(
+                    new_phrase_df = upload_df,
+                    gsheet_name = self.gsheet_name,
+                    worksheet_name = self.worksheet_name
+                )
+        else:
+            message = sql_update_phrasedict(upload_df)
         
         return message
 

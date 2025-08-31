@@ -2,7 +2,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import select, text
 from sqlalchemy.exc import SQLAlchemyError
 from database import engine
-from models import WordDict, QuizAgg
+from models import WordDict, QuizAgg, PhraseDict
 import pandas as pd
 from typing import List
 
@@ -96,6 +96,50 @@ def sql_update_worddict(df: pd.DataFrame):
         
         overlap_count, add_count = count_overlap_word(df['word'].tolist())
         message = f"Overwrite mode enabled.  Replacing {overlap_count} words and {add_count} new words added."
+        return message
+    
+    except SQLAlchemyError as e:
+        message = f"Replace-by-word transaction failed: {e}"
+        return message 
+ 
+
+ 
+def sql_update_phrasedict(df: pd.DataFrame):
+    """
+    For every distinct `word` in df:
+      - delete all existing WordDict rows with that word
+      - insert the provided rows for that word
+    All in one transaction (atomic).
+    """
+    df = df.copy()
+    df.columns = [col.lower().replace(' ', '_') for col in df.columns]
+    df['added_date'] = pd.to_datetime('today').normalize()
+
+    # Ensure required columns exist
+    required = ['phrase_id', 'line', 'pinyin', 'meaning', 'response', 'response_pinyin',
+        'response_meaning', 'complexity', 'category', 'tone', 'added_date']
+        
+    for col in required:
+        if col not in df.columns:
+            df[col] = None
+
+    # Generate word_id
+    df_id = pd.read_sql("SELECT MAX(phrase_id) FROM PhraseDict", engine)
+    max_phrase_id = pd.to_numeric(df_id.values[0][0].replace("P", ""))
+    new_phrase_ids = ['P'+str(num + max_phrase_id).zfill(6) for num in range(1, df.shape[0] + 1)]
+    df['phrase_id'] = new_phrase_ids
+
+    # SQLite wants None, not NaN
+    df = df.where(pd.notnull(df), None)
+
+    records = df[required].to_dict(orient="records")
+
+    try:
+        with Session(engine) as session:
+            session.bulk_insert_mappings(PhraseDict, records)
+            session.commit()
+        
+        message = "Saved new phrases to the dictionary."
         return message
     
     except SQLAlchemyError as e:
