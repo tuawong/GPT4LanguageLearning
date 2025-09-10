@@ -2,7 +2,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import select, text
 from sqlalchemy.exc import SQLAlchemyError
 from database import engine
-from models import WordDict, QuizAgg, PhraseDict
+from models import WordDict, QuizAgg, PhraseDict, QuizLog
 import pandas as pd
 from typing import List
 
@@ -144,5 +144,51 @@ def sql_update_phrasedict(df: pd.DataFrame):
     
     except SQLAlchemyError as e:
         message = f"Replace-by-word transaction failed: {e}"
+        return message 
+ 
+
+
+def sql_update_quizlog(df: pd.DataFrame):
+    """
+    For every distinct `word` in df:
+      - delete all existing WordDict rows with that word
+      - insert the provided rows for that word
+    All in one transaction (atomic).
+    """
+    df = df.copy()
+    df.columns = [col.lower().replace(' ', '_') for col in df.columns]
+    df['last_quiz'] = pd.to_datetime('today').normalize()
+
+    # Ensure required columns exist
+
+    # Generate word_id
+    df_id = pd.read_sql("SELECT MAX(quiz_id) FROM QuizLog", engine)
+    max_phrase_id = pd.to_numeric(df_id.values[0][0].replace("QW", ""))
+    new_phrase_ids = ['QW'+str(num + max_phrase_id).zfill(6) for num in range(1, df.shape[0] + 1)]
+    df['quiz_id'] = new_phrase_ids
+    
+    required = ['quiz_id', 'word_id', 'word', 'sentence', 'sentence_pinyin',
+       'pinyin_answer', 'pinyin_correct', 'pinyin_correction', 'meaning',
+       'meaning_correct', 'meaning_correction', 'last_quiz']
+        
+    for col in required:
+        if col not in df.columns:
+            df[col] = None
+
+    # SQLite wants None, not NaN
+    df = df.where(pd.notnull(df), None)
+
+    records = df[required].to_dict(orient="records")
+
+    try:
+        with Session(engine) as session:
+            session.bulk_insert_mappings(QuizLog, records)
+            session.commit()
+        
+        message = "Saved quiz result."
+        return message
+    
+    except SQLAlchemyError as e:
+        message = f"QuizLog Update transaction failed: {e}"
         return message 
  
