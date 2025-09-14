@@ -6,12 +6,14 @@ import pandas as pd
 import dash_bootstrap_components as dbc
 
 import main.Constants as Constants
+from main.sql import load_dict, load_phrase_dict
 
 # Incorporate data
 dict_sheet_name = Constants.PHRASE_SHEET_NAME
 gsheet_name = Constants.SHEET_NAME
 
-orig_df = load_dict(gsheet_mode=True, gsheet_name=gsheet_name, worksheet_name=dict_sheet_name)
+#orig_df = load_dict(gsheet_mode=True, gsheet_name=gsheet_name, worksheet_name=dict_sheet_name)
+orig_df = load_phrase_dict()
 orig_df = orig_df[['Phrase Id', 'Added Date', 'Complexity', 'Category', 'Tone', 'Line', 'Pinyin', 'Meaning', 'Response', 'Response Pinyin','Response Meaning']]
 
 phrase_category = orig_df['Category'].drop_duplicates().sort_values().to_list()

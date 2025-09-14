@@ -148,15 +148,19 @@ class QuizGenerator:
             gsheet_mode: bool = False,
             gsheet_name: str = None,
             wks_name: str = None,
-            table_name: str = None
+            table_name: str = None, 
+            df: pd.DataFrame = None
             ):
         self.gsheet_name = gsheet_name
         self.wks_name = wks_name
-        if gsheet_mode:
-            self.dict_df = load_dict(gsheet_mode=True, gsheet_name=gsheet_name, worksheet_name=wks_name)
-            self.dict_df.columns = [col.lower().replace(' ', '_') for col in self.dict_df.columns]
+        if df is not None:
+            self.dict_df = df
         else:
-            self.dict_df = pd.read_sql(f"SELECT * FROM {table_name}", engine)
+            if gsheet_mode:
+                self.dict_df = load_dict(gsheet_mode=True, gsheet_name=gsheet_name, worksheet_name=wks_name)
+                self.dict_df.columns = [col.lower().replace(' ', '_') for col in self.dict_df.columns]
+            else:
+                self.dict_df = pd.read_sql(f"SELECT * FROM {table_name}", engine)
 
     def generate_pinyin_and_meaning_quiz(
             self, 

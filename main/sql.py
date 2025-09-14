@@ -6,6 +6,56 @@ from models import WordDict, QuizAgg, PhraseDict, QuizLog
 import pandas as pd
 from typing import List
 
+def load_dict():
+    """
+    Load the dictionary data from the database, joining with quiz statistics.
+    """
+    rename_dict = {'word_id': 'Word Id',
+    'word': 'Word',
+    'pinyin': 'Pinyin',
+    'pinyin_simplified': 'Pinyin Simplified',
+    'type': 'Type',
+    'word_category': 'Word Category',
+    'word_rarity': 'Word Rarity',
+    'meaning': 'Meaning',
+    'sentence': 'Sentence',
+    'sentence_pinyin': 'Sentence Pinyin',
+    'sentence_meaning': 'Sentence Meaning',
+    'added_date': 'Added Date',
+    'num_quiz_attempt': 'Quiz Attempts',
+    'pinyin_correct_cnt': 'Num Pinyin Correct',
+    'meaning_correct_cnt': 'Num Meaning Correct',
+    'last_quiz': 'Last Quiz'}
+
+    cols = ['Word Id', 'Word', 'Pinyin', 'Meaning', 'Added Date', 'Word Category', 'Word Rarity', 'Type', 'Sentence', 'Sentence Pinyin', 'Sentence Meaning', 'Quiz Attempts', 'Num Pinyin Correct', 'Num Meaning Correct', 'Last Quiz']
+    orig_df = pd.read_sql("""
+                    SELECT 
+                        WordDict.*, 
+                        IIF(num_quiz_attempt IS NULL, 0, num_quiz_attempt) AS num_quiz_attempt,
+                        IIF(pinyin_correct_cnt IS NULL, 0, pinyin_correct_cnt) AS pinyin_correct_cnt,
+                        IIF(meaning_correct_cnt IS NULL, 0, meaning_correct_cnt) AS meaning_correct_cnt, 
+                        last_quiz
+                    FROM WordDict
+                    LEFT JOIN QuizScore ON (WordDict.word_id = QuizScore.word_id) AND (WordDict.word = QuizScore.word)
+                    """, engine)
+
+    orig_df = orig_df.rename(columns=rename_dict)
+    orig_df = orig_df[cols]
+    return orig_df
+
+
+def load_phrase_dict():
+    """
+    Load the phrase dictionary data from the database.
+    """
+    rename_dict = {col:col.replace('_', ' ').title() for col in PhraseDict.__table__.columns.keys()}
+    phrase_df = pd.read_sql("""
+                    SELECT *
+                    FROM PhraseDict
+                    """, engine)
+    phrase_df = phrase_df.rename(columns=rename_dict)
+    return phrase_df
+
 def count_overlap_word(new_word_list: List) -> tuple[int,int]:
     """
     Count the number of overlapping words between the new words and the existing words in the database.

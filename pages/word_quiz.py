@@ -7,20 +7,18 @@ import pandas as pd
 import dash_bootstrap_components as dbc
 
 import main.Constants as Constants
-
+from main.sql import load_dict
 # Incorporate data
 dict_sheet_name = Constants.DICT_SHEET_NAME
 gsheet_name = Constants.SHEET_NAME
 
-orig_df = load_dict(gsheet_mode=True, gsheet_name=gsheet_name, worksheet_name=dict_sheet_name)
+#orig_df = load_dict(gsheet_mode=True, gsheet_name=gsheet_name, worksheet_name=dict_sheet_name)
+orig_df = load_dict()
 word_date = orig_df['Added Date'].drop_duplicates().sort_values().to_list()
 word_cat = orig_df['Word Category'].drop_duplicates().sort_values().to_list()
 word_rarity = orig_df['Word Rarity'].drop_duplicates().sort_values().to_list()
 
-quiz_generator = QuizGenerator(
-    gsheet_name = gsheet_name,
-    wks_name = dict_sheet_name
-)
+quiz_generator = QuizGenerator(df=orig_df)
 
 dash.register_page(__name__, path='/wordquiz', name='Word Quiz')
 

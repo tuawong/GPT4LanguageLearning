@@ -13,7 +13,7 @@ from datetime import datetime
 
 from main.gsheets import load_dict, save_df_to_gsheet, format_gsheet
 from main.utils import get_completion, parse_response_table
-from main.sql_utils import sql_update_phrasedict
+from main.sql import sql_update_phrasedict
 
 gsheet_name = Constants.SHEET_NAME
 phrasesheet_name = Constants.PHRASE_SHEET_NAME

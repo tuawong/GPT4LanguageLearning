@@ -6,18 +6,20 @@ import pandas as pd
 import dash_bootstrap_components as dbc
 
 import main.Constants as Constants
-
+from database import engine, ensure_views_from_files
+from main.sql import load_dict
 # Incorporate data
-dict_sheet_name = Constants.DICT_SHEET_NAME
-gsheet_name = Constants.SHEET_NAME
+#dict_sheet_name = Constants.DICT_SHEET_NAME
+#gsheet_name = Constants.SHEET_NAME
 
-orig_df = load_dict(gsheet_mode=True, gsheet_name=gsheet_name, worksheet_name=dict_sheet_name)
+#orig_df = load_dict(gsheet_mode=True, gsheet_name=gsheet_name, worksheet_name=dict_sheet_name)
+
+ensure_views_from_files()
+orig_df = load_dict()
+
 word_date = orig_df['Added Date'].drop_duplicates().sort_values().to_list()
 word_cat = orig_df['Word Category'].drop_duplicates().sort_values().to_list()
 word_rarity = orig_df['Word Rarity'].drop_duplicates().sort_values().to_list()
-
-cols = ['Word Id', 'Word', 'Pinyin', 'Meaning', 'Added Date', 'Word Category', 'Word Rarity', 'Type', 'Sentence', 'Sentence Pinyin', 'Sentence Meaning', 'Num_Quiz_Attempt', 'Num_Correct', 'Num_Wrong', 'Last_Quiz']
-orig_df = orig_df[cols]
 
 dash.register_page(__name__, path='/dictionary')
 
@@ -126,10 +128,10 @@ layout = dbc.Container([
 )
 def reload_table(n_clicks):
     if n_clicks > 0:
-        df = load_dict(gsheet_mode=True, gsheet_name=gsheet_name, worksheet_name=dict_sheet_name)
-        return df[cols].to_dict('records')
+        df = load_dict()
+        return df.to_dict('records')
     else:
-        return orig_df[cols].to_dict('records')
+        return orig_df.to_dict('records')
 
 # Add controls to build the interaction
 @callback(
