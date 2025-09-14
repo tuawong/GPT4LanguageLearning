@@ -220,7 +220,11 @@ class PhraseGenerationPipeline:
     '''
     Translation pipeline to generate translations for Chinese words and update the dictionary with the new words.
     '''
-    def __init__(self, gsheet_name, worksheet_name):
+    def __init__(self, 
+                 gsheet_mode=False,
+                 gsheet_name=None, 
+                 worksheet_name=None):
+        self.gsheet_mode = gsheet_mode
         self.gsheet_name = gsheet_name
         self.worksheet_name = worksheet_name
         self.new_phrase_df = pd.DataFrame()
@@ -287,14 +291,14 @@ class PhraseGenerationPipeline:
     def clear_new_phrases(self):
         self.new_phrase_df = pd.DataFrame() 
     
-    def update_module(self, df=None, gsheet_mode=False):
+    def update_module(self, df=None):
         if (df is None):
             upload_df = self.new_phrase_df
         elif (df is not None):
             upload_df = df
         else:
             raise Exception("Run the phrase generation module first or provide external dataset before running the update module.")
-        if gsheet_mode:
+        if self.gsheet_mode:
             message = save_new_phrase_to_dict(
                     new_phrase_df = upload_df,
                     gsheet_name = self.gsheet_name,

@@ -21,9 +21,10 @@ from main.translation import TranslationPipeline
 import main.Constants as Constants
 
 # Incorporate data
-dict_sheet_name = Constants.DICT_SHEET_NAME
-gsheet_name = Constants.SHEET_NAME
-translator_pipe = TranslationPipeline(gsheet_name=gsheet_name, worksheet_name=dict_sheet_name)
+#dict_sheet_name = Constants.DICT_SHEET_NAME
+#gsheet_name = Constants.SHEET_NAME
+#translator_pipe = TranslationPipeline(gsheet_name=gsheet_name, worksheet_name=dict_sheet_name)
+translator_pipe = TranslationPipeline()
 
 #df = load_dict(gsheet_mode=True, gsheet_name=gsheet_name, worksheet_name=dict_sheet_name)
 df = pd.DataFrame()

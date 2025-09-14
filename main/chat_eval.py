@@ -13,6 +13,8 @@ from datetime import datetime
 
 from main.gsheets import load_dict, save_df_to_gsheet, format_gsheet
 from main.utils import get_completion, parse_response_table
+from main.sql import sql_update_responselog
+
 
 client = OpenAI(
     api_key = Constants.API_KEY_OPENAI,
@@ -50,7 +52,7 @@ def get_prompt_to_gen_phrases_for_quiz(
     
     The output should be a table with the following columns. 
     1) Prompt:  In simplified Chinese.  The phrase generated should be relevant to the situation.  The phrases should be unique and not repeated.
-    2) PromptPinyin: Pinyin associated with the phrase
+    2) Prompt Pinyin: Pinyin associated with the phrase
     3) Response:  (Leave Blank)
     4) Complexity:  Complexity of content of the phrase to generate based on the input parameters.  Can be...
     -  Low (Short basic conversation, easily learnt by first time Mandarin speaker.  Keep the line less than 10 characters)
@@ -69,7 +71,7 @@ def get_prompt_convo_eval(conv_df):
 
     The input definition is as follows:
     1) Prompt - The line preceding the response to be evaluated.  This is used to evaluate the user's line for contextual accuracy
-    2) PromptPinyin - Pinyin for the line.
+    2) Prompt Pinyin - Pinyin for the line.
     3) Response - The response provided by the user.
     4) Complexity - The complexity of the response.  Can be Low, Medium, or High.
     5) Tone - The tone of the response.  Can be Polite or Casual.
@@ -80,11 +82,11 @@ def get_prompt_convo_eval(conv_df):
 
     The output table should have the following columns.  No new columns can be needed and no columns can be removed:
     1) Prompt- Prompt provided in the input table.  Do not change this column from the input table.
-    2) PromptPinyin - Pinyin provided in the input table. Do not change this column from the input table.
-    3) PromptMeaning - Meaning of the prompt
+    2) Prompt Pinyin - Pinyin provided in the input table. Do not change this column from the input table.
+    3) Prompt Meaning - Meaning of the prompt
     4) Response- The response provided in the response table. Do not change this column from the input table.
-    5) ResponsePinyin - Pinyin for the response.
-    6) ResponseMeaning - Meaning of the response.
+    5) Response Pinyin - Pinyin for the response.
+    6) Response Meaning - Meaning of the response.
     6) Correctness - A score from 1 to 10 based on grammatical accuracy and vocabulary usage in the Response column.
     7) Naturalness - A score from 1 to 10 based on how colloquial and fluent the sentence in the Response column sounds in casual conversation.
     8) Contextual Appropriateness - A score from 1 to 10 based on whether the sentence in the Response column fits the context of the conversation. 
@@ -101,22 +103,16 @@ def get_prompt_convo_eval(conv_df):
 class ResponseQuizGenerator:
     def __init__(
             self, 
-            gsheet_name: str,
-            wks_name: str,
-            table_name: str = None, 
-            df: pd.DataFrame = None
+            gsheet_mode: bool = False,
+            gsheet_name: str = None,
+            wks_name: str = None,
+            table_name: str = None 
             ):
+        self.gsheet_mode = gsheet_mode
         self.gsheet_name = gsheet_name
         self.wks_name = wks_name
-        if df is not None:
-            self.dict_df = df
-        else:
-            if gsheet_mode:
-                self.dict_df = load_dict(gsheet_mode=True, gsheet_name=gsheet_name, worksheet_name=wks_name)
-                self.dict_df.columns = [col.lower().replace(' ', '_') for col in self.dict_df.columns]
-            else:
-                self.dict_df = pd.read_sql(f"SELECT * FROM {table_name}", engine)
-                
+        self.table_name = table_name
+
     def generate_response_quiz(
             self, 
             situation: str = "",
@@ -176,12 +172,14 @@ class ResponseQuizGenerator:
     def output_quiz_log(self):
         if not hasattr(self, 'eval_df'):
             raise Exception("Quiz Result not available.  Please run evaluate the quiz first.")
-        
-        quiz_export = self.eval_df
-        quiz_log = load_dict(gsheet_mode=True, gsheet_name=self.gsheet_name, worksheet_name=self.wks_name)
-        max_id = pd.to_numeric(quiz_log['Quiz Id'].apply(lambda x: x.replace('QR','')), errors='coerce').max()
-        quiz_export['Quiz Id'] = ['QR'+str(num + max_id).zfill(6) for num in range(1, len(quiz_export) + 1)]
-        quiz_export = quiz_export[quiz_log.columns]
+        if self.gsheet_mode:
+            quiz_export = self.eval_df
+            quiz_log = load_dict(gsheet_mode=True, gsheet_name=self.gsheet_name, worksheet_name=self.wks_name)
+            max_id = pd.to_numeric(quiz_log['Quiz Id'].apply(lambda x: x.replace('QR','')), errors='coerce').max()
+            quiz_export['Quiz Id'] = ['QR'+str(num + max_id).zfill(6) for num in range(1, len(quiz_export) + 1)]
+            quiz_export = quiz_export[quiz_log.columns]
 
-        quiz_log = pd.concat([quiz_log, quiz_export], axis=0)
-        save_df_to_gsheet(overwrite_mode=True, df_to_save=quiz_log, gsheet_name=self.gsheet_name, wks_name=self.wks_name)
+            quiz_log = pd.concat([quiz_log, quiz_export], axis=0)
+            save_df_to_gsheet(overwrite_mode=True, df_to_save=quiz_log, gsheet_name=self.gsheet_name, wks_name=self.wks_name)
+        else:
+            sql_update_responselog(self.eval_df)

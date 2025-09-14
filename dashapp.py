@@ -1,6 +1,11 @@
 import dash
 from dash import Dash, html, dcc
 import dash_bootstrap_components as dbc
+from database import init_db, ensure_views_from_files
+
+# Initialize DB and ensure views are created
+init_db()
+ensure_views_from_files()
 
 external_stylesheets = [dbc.themes.MATERIA]
 app = Dash(__name__, use_pages=True, external_stylesheets=external_stylesheets)

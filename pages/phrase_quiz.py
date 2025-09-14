@@ -9,13 +9,10 @@ import dash_bootstrap_components as dbc
 import main.Constants as Constants
 
 # Incorporate data
-dict_sheet_name = Constants.RESPONSE_LOG_SHEET_NAME
-gsheet_name = Constants.SHEET_NAME
+#dict_sheet_name = Constants.RESPONSE_LOG_SHEET_NAME
+#gsheet_name = Constants.SHEET_NAME
 
-response_quiz_generator = ResponseQuizGenerator(
-    gsheet_name = gsheet_name,
-    wks_name = dict_sheet_name
-)
+response_quiz_generator = ResponseQuizGenerator(table_name='ResponseLog')
 
 dash.register_page(__name__, path='/responsequiz', name='Response Quiz')
 
