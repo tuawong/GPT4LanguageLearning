@@ -14,6 +14,7 @@ gsheet_name = Constants.SHEET_NAME
 
 #orig_df = load_dict(gsheet_mode=True, gsheet_name=gsheet_name, worksheet_name=dict_sheet_name)
 orig_df = load_dict()
+id_col = 'Word Id'
 word_date = orig_df['Added Date'].drop_duplicates().sort_values().to_list()
 word_cat = orig_df['Word Category'].drop_duplicates().sort_values().to_list()
 word_rarity = orig_df['Word Rarity'].drop_duplicates().sort_values().to_list()
@@ -162,6 +163,10 @@ def handle_quiz_buttons(n_quiz_clicks, n_score_clicks, num_words, date_filter, c
             rarity_filter = None
 
         quiz_df = quiz_generator.generate_pinyin_and_meaning_quiz(
+            id_column = id_col,
+            date_column = 'Added Date',
+            category_column = 'Word Category',
+            rarity_column = 'Word Rarity',
             num_words=num_words,
             date_filter=date_filter,
             category_filter=category_filter,
@@ -187,15 +192,12 @@ def handle_quiz_buttons(n_quiz_clicks, n_score_clicks, num_words, date_filter, c
             display_columns = [{"name": i, "id": i} for i in quiz_result.columns]
             message = "Quiz Scored!"
 
-            quiz_generator.update_quiz_score(
-                gsheet_name = gsheet_name, 
-                wks_name = 'Tua_List'
-            )
+            #quiz_generator.update_quiz_score(
+            #    gsheet_name = gsheet_name, 
+            #    wks_name = 'Tua_List'
+            #)
 
-            quiz_generator.output_quiz_log(
-                gsheet_name = gsheet_name, 
-                wks_name = 'QuizLog'
-            )
+            quiz_generator.output_quiz_log(gsheet_mode=False)
 
             quiz_generator.quiz_result = None  # Reset quiz result after scoring
 

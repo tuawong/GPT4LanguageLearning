@@ -18,9 +18,10 @@ import sys
 #        sys.path.insert(0, path)
 
 
-from main.gsheets import load_dict
+from main.gsheets import load_gsheet_dict
 from main.phrase_generator import PhraseGenerationPipeline
 from main.dash_utils import create_tabs
+from main.sql import load_phrase_dict
 import main.Constants as Constants
 
 
@@ -40,7 +41,7 @@ phrase_generator = PhraseGenerationPipeline(
 )
 
 
-phrase_dict = load_dict(gsheet_mode=True, gsheet_name=gsheet_name, worksheet_name=phrasesheet_name)
+phrase_dict = load_phrase_dict()
 existing_phrases = phrase_dict['Line'].drop_duplicates().values.tolist()
 
 # App layout

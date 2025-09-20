@@ -11,14 +11,17 @@ import os
 from io import StringIO
 from datetime import datetime
 
-from main.gsheets import load_dict, save_df_to_gsheet, format_gsheet
+from main.gsheets import load_gsheet_dict, save_df_to_gsheet, format_gsheet
+from main.sql import load_phrase_dict
 from main.utils import get_completion, parse_response_table
 from main.sql import sql_update_phrasedict
 
 gsheet_name = Constants.SHEET_NAME
 phrasesheet_name = Constants.PHRASE_SHEET_NAME
 
-phrase_dict = load_dict(gsheet_mode=True, gsheet_name=gsheet_name, worksheet_name=phrasesheet_name)
+#phrase_dict = load_gsheet_dict(gsheet_mode=True, gsheet_name=gsheet_name, worksheet_name=phrasesheet_name)
+phrase_dict = load_phrase_dict()
+
 existing_cat = phrase_dict['Category'].drop_duplicates().values
 
 client = OpenAI(
@@ -202,7 +205,7 @@ def save_new_phrase_to_dict(
     overwrite_mode=False
 ):  
     if not overwrite_mode:
-        phrase_dict = load_dict(gsheet_mode=True, gsheet_name=gsheet_name, worksheet_name=worksheet_name)
+        phrase_dict = load_gsheet_dict(gsheet_mode=True, gsheet_name=gsheet_name, worksheet_name=worksheet_name)
         max_id = pd.to_numeric(phrase_dict['Phrase Id'].apply(lambda x: x.replace('P', '')), errors='coerce').max()
         new_phrase_df['Phrase Id'] = ['P' + str(num + max_id).zfill(6) for num in range(1, len(new_phrase_df) + 1)]
 

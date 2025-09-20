@@ -11,8 +11,8 @@ import os
 from io import StringIO
 from datetime import datetime
 
-from main.sql import sql_update_quizlog
-from main.gsheets import load_dict, save_df_to_gsheet
+from main.sql import sql_update_quizlog, load_dict
+from main.gsheets import load_gsheet_dict, save_df_to_gsheet
 from main.translation import save_new_words_to_dict
 from database import engine
 
@@ -157,14 +157,17 @@ class QuizGenerator:
             self.dict_df = df
         else:
             if gsheet_mode:
-                self.dict_df = load_dict(gsheet_mode=True, gsheet_name=gsheet_name, worksheet_name=wks_name)
+                self.dict_df = load_gsheet_dict(gsheet_mode=True, gsheet_name=gsheet_name, worksheet_name=wks_name)
                 self.dict_df.columns = [col.lower().replace(' ', '_') for col in self.dict_df.columns]
             else:
-                self.dict_df = pd.read_sql(f"SELECT * FROM {table_name}", engine)
+                self.dict_df = load_dict()
 
     def generate_pinyin_and_meaning_quiz(
             self, 
-            id_column: str = 'word_id',
+            id_column: str = 'Word Id',
+            date_column: str = 'Added Date',
+            category_column: str = 'Word Category',
+            rarity_column: str = 'Word Rarity',
             num_words: int = 10,
             date_filter: Union[List[str], str] = None,
             category_filter: Union[List[str], str] = None, 
@@ -173,28 +176,28 @@ class QuizGenerator:
         dict_df = self.dict_df.copy()
 
         if date_filter is not None:
-            dict_df = dict_df[dict_df['added_date'] >= date_filter]
+            dict_df = dict_df[dict_df[date_column] >= date_filter]
 
         if category_filter is not None:
             if type(category_filter) == str:
                 category_filter = [category_filter]
-                dict_df = dict_df[dict_df['word_category'].isin(category_filter)]
+                dict_df = dict_df[dict_df[category_column].isin(category_filter)]
 
         if rarity_filter is not None:
             if type(rarity_filter) == str:
                 rarity_filter = [rarity_filter]
-                dict_df = dict_df[dict_df['word_rarity'].isin(rarity_filter)]
+                dict_df = dict_df[dict_df[rarity_column].isin(rarity_filter)]
 
         unique_ids = dict_df[id_column].unique()
         num_to_select = min(num_words, len(unique_ids))
         quiz_id = pd.Series(unique_ids).sample(n=num_to_select, replace=False)
 
         quiz_df = dict_df.loc[dict_df[id_column].isin(quiz_id)]
-        quiz_answer_key = quiz_df[['word_id', 'word', 'word_category', 'sentence', 'sentence_pinyin', 'pinyin', 'pinyin_simplified']].sample(frac=1, random_state=1).reset_index(drop=True)
-        quiz_df = quiz_answer_key.drop(columns=['pinyin', 'pinyin_simplified', 'sentence_pinyin'])
-        quiz_df['pinyin'] = ''
-        quiz_df['meaning'] = '' 
-        
+        quiz_answer_key = quiz_df[['Word Id', 'Word', 'Word Category', 'Sentence', 'Sentence Pinyin', 'Pinyin', 'Pinyin Simplified']].sample(frac=1, random_state=1).reset_index(drop=True)
+        quiz_df = quiz_answer_key.drop(columns=['Pinyin', 'Pinyin Simplified', 'Sentence Pinyin'])
+        quiz_df['Pinyin'] = ''
+        quiz_df['Meaning'] = '' 
+
         self.answer_key = quiz_answer_key
         self.quiz = quiz_df
         return quiz_df
@@ -209,13 +212,13 @@ class QuizGenerator:
         answer_key_df = self.answer_key
         quiz_df = self.quiz
 
-        pinyin_eval_df = answer_key_df.loc[answer_key_df['word_id'].isin(quiz_df['word_id'])][['word_id', 'word', 'pinyin', 'pinyin_simplified', 'sentence_pinyin']].reset_index (drop=True)
-        pinyin_eval_df['pinyin_answer'] = pinyin_answer
-        pinyin_eval_df['pinyin_simplified'] = pinyin_eval_df['pinyin_simplified'].fillna('').apply(lambda x: x.replace(' ', '').lower().replace('5', ''))
-        pinyin_eval_df['pinyin_answer'] = pinyin_eval_df['pinyin_answer'].fillna('').apply(lambda x: x.replace(' ', '').lower().replace('5', ''))
-        pinyin_eval_df['pinyin_correct'] = (pinyin_eval_df['pinyin_simplified'] == pinyin_eval_df['pinyin_answer'])
-        pinyin_eval_df['pinyin_correction'] = np.where(pinyin_eval_df['pinyin_correct'], '', pinyin_eval_df['pinyin_simplified'])
-        pinyin_eval_df['pinyin_correct'] = pinyin_eval_df['pinyin_correct'].map({True: 'yes', False: 'no'})
+        pinyin_eval_df = answer_key_df.loc[answer_key_df['Word Id'].isin(quiz_df['Word Id'])][['Word Id', 'Word', 'Pinyin', 'Pinyin Simplified', 'Sentence Pinyin']].reset_index (drop=True)
+        pinyin_eval_df['Pinyin Answer'] = pinyin_answer
+        pinyin_eval_df['Pinyin Simplified'] = pinyin_eval_df['Pinyin Simplified'].fillna('').apply(lambda x: x.replace(' ', '').lower().replace('5', ''))
+        pinyin_eval_df['Pinyin Answer'] = pinyin_eval_df['Pinyin Answer'].fillna('').apply(lambda x: x.replace(' ', '').lower().replace('5', ''))
+        pinyin_eval_df['Pinyin Correct'] = (pinyin_eval_df['Pinyin Simplified'] == pinyin_eval_df['Pinyin Answer'])
+        pinyin_eval_df['Pinyin Correction'] = np.where(pinyin_eval_df['Pinyin Correct'], '', pinyin_eval_df['Pinyin Simplified'])
+        pinyin_eval_df['Pinyin Correct'] = pinyin_eval_df['Pinyin Correct'].map({True: 'yes', False: 'no'})
 
         self.pinyin_eval_df = pinyin_eval_df
         return pinyin_eval_df
@@ -229,15 +232,15 @@ class QuizGenerator:
         '''
         quiz_df = self.quiz
         quiz_prompt = get_prompt_evaluate_quiz_meaning_only(
-            word_list = quiz_df['word'].values,
-            sentence_list = quiz_df['sentence'].values,
+            word_list = quiz_df['Word'].values,
+            sentence_list = quiz_df['Sentence'].values,
             meaning = meaning_answer
             )
 
         sample_response_translation = get_completion(prompt=quiz_prompt, temperature=0.7)
         meaning_eval_df = parse_meaning_table(sample_response_translation.choices[0].message.content)
         meaning_eval_df = meaning_eval_df.reset_index(drop=True)
-        meaning_eval_df.columns = [col.lower().replace(' ', '_') for col in meaning_eval_df.columns]
+        #meaning_eval_df.columns = [col.lower().replace(' ', '_') for col in meaning_eval_df.columns]
         
         self.meaning_eval_df = meaning_eval_df
         return meaning_eval_df
@@ -256,10 +259,10 @@ class QuizGenerator:
             )
 
         outdf = pd.concat([
-            self.answer_key[['word_id']],
-            self.quiz[['word', 'sentence']], 
-            pinyin_eval_df[['sentence_pinyin', 'pinyin_answer', 'pinyin_correct', 'pinyin_correction']], 
-            meaning_eval_df[['meaning', 'meaning_correct', 'meaning_correction']]
+            self.answer_key[['Word Id']],
+            self.quiz[['Word', 'Sentence']], 
+            pinyin_eval_df[['Sentence Pinyin', 'Pinyin Answer', 'Pinyin Correct', 'Pinyin Correction']], 
+            meaning_eval_df[['Meaning', 'Meaning Correct', 'Meaning Correction']]
             ], axis=1)
 
         outdf['last_quiz'] = datetime.now().strftime('%Y-%m-%d')

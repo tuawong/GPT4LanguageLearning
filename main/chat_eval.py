@@ -11,7 +11,7 @@ import os
 from io import StringIO
 from datetime import datetime
 
-from main.gsheets import load_dict, save_df_to_gsheet, format_gsheet
+from main.gsheets import load_gsheet_dict, save_df_to_gsheet, format_gsheet
 from main.utils import get_completion, parse_response_table
 from main.sql import sql_update_responselog
 
@@ -174,7 +174,7 @@ class ResponseQuizGenerator:
             raise Exception("Quiz Result not available.  Please run evaluate the quiz first.")
         if self.gsheet_mode:
             quiz_export = self.eval_df
-            quiz_log = load_dict(gsheet_mode=True, gsheet_name=self.gsheet_name, worksheet_name=self.wks_name)
+            quiz_log = load_gsheet_dict(gsheet_mode=True, gsheet_name=self.gsheet_name, worksheet_name=self.wks_name)
             max_id = pd.to_numeric(quiz_log['Quiz Id'].apply(lambda x: x.replace('QR','')), errors='coerce').max()
             quiz_export['Quiz Id'] = ['QR'+str(num + max_id).zfill(6) for num in range(1, len(quiz_export) + 1)]
             quiz_export = quiz_export[quiz_log.columns]

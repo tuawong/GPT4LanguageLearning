@@ -27,7 +27,7 @@ def load_dict():
     'meaning_correct_cnt': 'Num Meaning Correct',
     'last_quiz': 'Last Quiz'}
 
-    cols = ['Word Id', 'Word', 'Pinyin', 'Meaning', 'Added Date', 'Word Category', 'Word Rarity', 'Type', 'Sentence', 'Sentence Pinyin', 'Sentence Meaning', 'Quiz Attempts', 'Num Pinyin Correct', 'Num Meaning Correct', 'Last Quiz']
+    cols = ['Word Id', 'Word', 'Pinyin', 'Pinyin Simplified', 'Meaning', 'Added Date', 'Word Category', 'Word Rarity', 'Type', 'Sentence', 'Sentence Pinyin', 'Sentence Meaning', 'Quiz Attempts', 'Num Pinyin Correct', 'Num Meaning Correct', 'Last Quiz']
     orig_df = pd.read_sql("""
                     SELECT 
                         WordDict.*, 

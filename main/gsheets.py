@@ -17,7 +17,7 @@ from io import StringIO
 from datetime import datetime
 
 
-def load_dict(
+def load_gsheet_dict(
         dict_path: str = None, 
         gsheet_mode=False, 
         gsheet_name = None, 

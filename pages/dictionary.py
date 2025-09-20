@@ -8,14 +8,12 @@ import dash_bootstrap_components as dbc
 import main.Constants as Constants
 from database import engine, ensure_views_from_files
 from main.sql import load_dict
-# Incorporate data
-#dict_sheet_name = Constants.DICT_SHEET_NAME
-#gsheet_name = Constants.SHEET_NAME
-
-#orig_df = load_dict(gsheet_mode=True, gsheet_name=gsheet_name, worksheet_name=dict_sheet_name)
 
 ensure_views_from_files()
 orig_df = load_dict()
+
+# Don't really need to show Pinyin Simplified column
+orig_df = orig_df.drop(columns=['Pinyin Simplified'])
 
 word_date = orig_df['Added Date'].drop_duplicates().sort_values().to_list()
 word_cat = orig_df['Word Category'].drop_duplicates().sort_values().to_list()
