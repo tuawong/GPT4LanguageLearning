@@ -180,7 +180,7 @@ def handle_quiz_buttons(n_quiz_clicks, n_score_clicks, num_phrases, situation, c
             display_columns = [{"name": i, "id": i} for i in quiz_result.columns]
             message = "Quiz Scored!"
 
-            response_quiz_generator.output_quiz_log()  # Export the response log to Google Sheets
+            response_quiz_generator.output_quiz_log()  # Export the response log to DB
             # Reset quiz result after scoring
             response_quiz_generator.eval_df = None
             response_quiz_generator.phrase_df = None  

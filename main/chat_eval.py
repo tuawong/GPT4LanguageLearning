@@ -91,7 +91,7 @@ def get_prompt_convo_eval(conv_df):
     7) Naturalness - A score from 1 to 10 based on how colloquial and fluent the sentence in the Response column sounds in casual conversation.
     8) Contextual Appropriateness - A score from 1 to 10 based on whether the sentence in the Response column fits the context of the conversation. 
     9) Comment - Feedback on what could be improved, with pinyin included for any Chinese words mentioned in the comment.  The comment MUST be in written in English.
-        certain Chinese words can be provided as example but pinyin will also have to be provided.
+        certain Chinese words can be provided as example but pinyin will also have to be provided. This must be less than 15 words.  Keep it short and concise. 
     10) Complexity - The complexity of the response.  Provided in input table
     11) Tone - The tone of the response.  Provided in input table
 
