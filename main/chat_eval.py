@@ -100,18 +100,54 @@ def get_prompt_convo_eval(conv_df):
     '''
 
 
+def get_prompt_translation_eval(conv_df):
+    return f'''
+    Given the following sentence and translation:
+    {conv_df}
+
+    The input definition is as follows:
+    1) Prompt - The line preceding the response to be evaluated.  This is used to evaluate the user's line for contextual accuracy
+    2) Prompt Pinyin - Pinyin for the line.
+    3) Response - The translation of the prompt provided by the user.
+    4) Complexity - The complexity of the response.  Can be Low, Medium, or High.
+    5) Tone - The tone of the response.  Can be Polite or Casual.
+
+    Please take the role of a Mandarin teacher and evaluate a the quality of Mandarin translation and provide a table with the following columns.  
+    The translation has to be evaluated on multiple dimensions 
+
+    The output table should have the following columns.  No new columns can be needed and no columns can be removed:
+    1) Prompt- Prompt provided in the input table.  Do not change this column from the input table.
+    2) Prompt Pinyin - Pinyin provided in the input table. Do not change this column from the input table.
+    3) User Translation - The translation provided by the user.
+    4) Correct Translation - The correct translation of the prompt. 
+    5) Correctness - A score from 1 to 10 based on grammatical accuracy and vocabulary usage in the user translation column.
+    6) Tone Correctness - A score from 1 to 10 based on how well the tone of the user translation matches the tone of the prompt.
+    7) Comment - If the translation has has high score, then omit comment.  If the score is low, then provide
+        Feedback on what could be improved, with pinyin included for any Chinese words mentioned in the comment.  The comment MUST be in written in English.
+        certain Chinese words can be provided as example but pinyin will also have to be provided. This must be less than 15 words.  Keep it short and concise. 
+    8) Complexity - The complexity of the response.  Provided in input table
+    9) Tone - The tone of the response.  Provided in input table
+
+    Example High Correctness/Low Tone:
+    Prompt | Translation | Tone Score | Comment
+    让一下  | Move aside. | 4/10       | Reads like a command in English. Mandarin is neutral and common in crowds. “Excuse me” is closer in tone.
+    随便坐  | Sit casually. | 2/10     | Feels dismissive in English. Mandarin means “Feel free to sit anywhere.”
+    
+    No other textual output should be provided.  The only output should be a table with the above columns.
+    The same number of rows should be provided as the number of rows in the input table.
+    '''
+
+
 class ResponseQuizGenerator:
     def __init__(
             self, 
             gsheet_mode: bool = False,
             gsheet_name: str = None,
-            wks_name: str = None,
-            table_name: str = None 
+            wks_name: str = ModuleNotFoundError
             ):
         self.gsheet_mode = gsheet_mode
         self.gsheet_name = gsheet_name
         self.wks_name = wks_name
-        self.table_name = table_name
 
     def generate_response_quiz(
             self, 
@@ -153,23 +189,35 @@ class ResponseQuizGenerator:
             self, 
             eval_df = None,
             temp = 0.7,
-            model = "gpt-4o-mini"
+            model = "gpt-4o-mini", 
+            mode = "conversation"
         ) -> pd.DataFrame:
         if eval_df is None:
             eval_df = self.phrase_df
-        sample_response_translation = (
-            get_completion(
-                prompt=get_prompt_convo_eval(eval_df), 
-                model=model , 
-                temperature=temp
+        if mode == "conversation":
+            sample_response_translation = (
+                get_completion(
+                    prompt=get_prompt_convo_eval(eval_df), 
+                    model=model , 
+                    temperature=temp
+                    )
                 )
-            )
+        elif mode == "translation":
+            sample_response_translation = (
+                get_completion(
+                    prompt=get_prompt_translation_eval(eval_df), 
+                    model=model , 
+                    temperature=temp
+                    )
+                )
+        else:
+            raise Exception("Mode not recognized.  Please use either 'conversation' or 'translation'")
         content = sample_response_translation.choices[0].message.content
         eval_df = parse_response_table(content)
         self.eval_df = eval_df
         return eval_df
     
-    def output_quiz_log(self):
+    def output_quiz_log(self, mode = "conversation"):
         if not hasattr(self, 'eval_df'):
             raise Exception("Quiz Result not available.  Please run evaluate the quiz first.")
         if self.gsheet_mode:
@@ -182,4 +230,20 @@ class ResponseQuizGenerator:
             quiz_log = pd.concat([quiz_log, quiz_export], axis=0)
             save_df_to_gsheet(overwrite_mode=True, df_to_save=quiz_log, gsheet_name=self.gsheet_name, wks_name=self.wks_name)
         else:
-            sql_update_responselog(self.eval_df)
+            sql_update_responselog(self.eval_df, mode=mode)
+
+    def run_evaluation_pipeline(
+            self,
+            eval_df = None,
+            temp = 0.7,
+            model = "gpt-4o-mini", 
+            mode = "conversation"
+        ):
+        self.evaluate_response(
+            eval_df = eval_df,
+            temp = temp,
+            model = model, 
+            mode = mode
+        )
+        self.output_quiz_log(mode=mode)
+        

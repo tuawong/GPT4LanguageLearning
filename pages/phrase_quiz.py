@@ -12,9 +12,9 @@ import main.Constants as Constants
 #dict_sheet_name = Constants.RESPONSE_LOG_SHEET_NAME
 #gsheet_name = Constants.SHEET_NAME
 
-response_quiz_generator = ResponseQuizGenerator(table_name='ResponseLog')
+response_quiz_generator = ResponseQuizGenerator()
 
-dash.register_page(__name__, path='/responsequiz', name='Response Quiz')
+dash.register_page(__name__, path='/phrasequiz', name='Phrase Quiz')
 
 # App layout
 layout = dbc.Container([
@@ -118,7 +118,8 @@ layout = dbc.Container([
             width=12,
             className="shadow-lg p-3 mb-5 bg-white rounded"
     )),
-    dbc.Col([dbc.Button('Score Quiz', id='score-phrase-quiz-button', n_clicks=0, color='primary')]),
+    dbc.Col([dbc.Button('Score Response Quiz', id='score-phrase-quiz-button', n_clicks=0, color='primary')]),
+    dbc.Col([dbc.Button('Score Translation Quiz', id='score-translation-quiz-button', n_clicks=0, color='primary')]),
     html.Div(id='response-score-status', style={'marginTop': '20px', 'fontSize': '20px', 'fontWeight': 'bold'}),
 ], fluid=True)
 
@@ -132,6 +133,7 @@ layout = dbc.Container([
     [
         Input('gen-phrase-quiz-button', 'n_clicks'),
         Input('score-phrase-quiz-button', 'n_clicks'),
+        Input('score-translation-quiz-button', 'n_clicks'),
     ],
     [
         State('phrase-quiz-num', 'value'),
@@ -141,7 +143,7 @@ layout = dbc.Container([
         State('phrase-quiz-display', 'data'),
     ],
 )
-def handle_quiz_buttons(n_quiz_clicks, n_score_clicks, num_phrases, situation, complexity, tone, quiz_table_data):
+def handle_quiz_buttons(n_quiz_clicks, n_score_clicks, n_translation_clicks, num_phrases, situation, complexity, tone, quiz_table_data):
     ctx = callback_context  # Determine which input triggered the callback
 
     # Default outputs
@@ -181,6 +183,21 @@ def handle_quiz_buttons(n_quiz_clicks, n_score_clicks, num_phrases, situation, c
             message = "Quiz Scored!"
 
             response_quiz_generator.output_quiz_log()  # Export the response log to DB
+            # Reset quiz result after scoring
+            response_quiz_generator.eval_df = None
+            response_quiz_generator.phrase_df = None  
+
+    elif button_id == 'score-translation-quiz-button' and n_translation_clicks > 0:
+        # Handle Scoring the Quiz
+        if quiz_table_data: 
+            quiz_df = pd.DataFrame(quiz_table_data)  
+            quiz_result = response_quiz_generator.evaluate_response(eval_df = quiz_df, mode="translation")
+
+            display_data = quiz_result.to_dict('records')
+            display_columns = [{"name": i, "id": i} for i in quiz_result.columns]
+            message = "Quiz Scored!"
+
+            response_quiz_generator.output_quiz_log(mode="translation")  # Export the response log to DB
             # Reset quiz result after scoring
             response_quiz_generator.eval_df = None
             response_quiz_generator.phrase_df = None  

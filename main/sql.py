@@ -2,7 +2,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import select, text
 from sqlalchemy.exc import SQLAlchemyError
 from database import engine
-from models import WordDict, QuizAgg, PhraseDict, QuizLog, ResponseLog
+from models import WordDict, QuizAgg, PhraseDict, QuizLog, ResponseLog, TranslationLog
 import pandas as pd
 from typing import List
 
@@ -244,7 +244,7 @@ def sql_update_quizlog(df: pd.DataFrame):
  
 
 
-def sql_update_responselog(df: pd.DataFrame):
+def sql_update_responselog(df: pd.DataFrame, mode="conversation"):
     """
     For every distinct `word` in df:
       - delete all existing WordDict rows with that word
@@ -257,33 +257,49 @@ def sql_update_responselog(df: pd.DataFrame):
     # Ensure required columns exist
 
     # Generate word_id
-    df_id = pd.read_sql("SELECT MAX(quiz_id) FROM ResponseLog", engine)
-    max_phrase_id = pd.to_numeric(df_id.values[0][0].replace("QR", ""))
-    new_phrase_ids = ['QR'+str(num + max_phrase_id).zfill(6) for num in range(1, df.shape[0] + 1)]
-    df['quiz_id'] = new_phrase_ids
-    
-    required = ['quiz_id', 'prompt', 'prompt_pinyin', 'prompt_meaning', 'response',
-       'response_pinyin', 'response_meaning', 'correctness', 'naturalness',
-       'contextual_appropriateness', 'comment', 'complexity', 'tone']
+    if mode == "conversation":
+        df_id = pd.read_sql("SELECT MAX(quiz_id) FROM ResponseLog", engine).fillna(0)
+        max_phrase_id = pd.to_numeric(df_id.values[0][0].replace("QR", ""))
+        new_phrase_ids = ['QR'+str(num + max_phrase_id).zfill(6) for num in range(1, df.shape[0] + 1)]
+        df['quiz_id'] = new_phrase_ids
         
+        required = ['quiz_id', 'prompt', 'prompt_pinyin', 'prompt_meaning', 'response',
+        'response_pinyin', 'response_meaning', 'correctness', 'naturalness',
+        'contextual_appropriateness', 'comment', 'complexity', 'tone']
+    elif mode == "translation":
+        df_id = pd.read_sql("SELECT MAX(quiz_id) FROM TranslationLog", engine)
+        if df_id.values[0][0] is None:
+            df_id.values[0][0] = "QT000000"
+        max_phrase_id = pd.to_numeric(df_id.values[0][0].replace("QT", ""))
+        new_phrase_ids = ['QT'+str(num + max_phrase_id).zfill(6) for num in range(1, df.shape[0] + 1)]
+        df['quiz_id'] = new_phrase_ids
+        
+        required = ['quiz_id', 'prompt', 'prompt_pinyin', 'user_translation', 'correct_translation', 'correctness',
+        'tone_correctness', 'comment', 'complexity', 'tone']
+    else:
+        return "Invalid mode for sql_update_responselog"
+            
     for col in required:
         if col not in df.columns:
             df[col] = None
 
     # SQLite wants None, not NaN
     df = df.where(pd.notnull(df), None)
-
     records = df[required].to_dict(orient="records")
 
     try:
         with Session(engine) as session:
-            session.bulk_insert_mappings(ResponseLog, records)
+            if mode == "conversation":
+                session.bulk_insert_mappings(ResponseLog, records)
+            elif mode == "translation":
+                print('Inserting into TranslationLog')
+                session.bulk_insert_mappings(TranslationLog, records)
             session.commit()
         
         message = "Saved quiz result."
         return message
     
     except SQLAlchemyError as e:
-        message = f"ResponseLog Update transaction failed: {e}"
+        message = f"Quiz Update transaction failed: {e}"
         return message 
  

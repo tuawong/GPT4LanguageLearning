@@ -4,5 +4,6 @@ from .quiz_agg import QuizAgg
 from .quiz_log import QuizLog
 from .phrase_dict import PhraseDict
 from .response_log import ResponseLog
+from .translation_log import TranslationLog
 
-__all__ = ["Base", "WordDict", "QuizAgg", "PhraseDict", "QuizLog", "ResponseLog"]
+__all__ = ["Base", "WordDict", "QuizAgg", "PhraseDict", "QuizLog", "ResponseLog", "TranslationLog"]
