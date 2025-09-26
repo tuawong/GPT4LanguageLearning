@@ -1,6 +1,5 @@
 from typing import List
 
-import main.Constants as Constants
 from  openai import OpenAI
 import os
 import numpy as np
@@ -13,14 +12,10 @@ from datetime import datetime
 
 from main.gsheets import load_gsheet_dict, save_df_to_gsheet, format_gsheet
 from main.sql import load_dict
-import main.Constants as Constants
 from main.utils import get_completion, parse_response_table
 from main.sql import sql_update_worddict
 
 # Incorporate data
-dict_sheet_name = Constants.DICT_SHEET_NAME
-gsheet_name = Constants.SHEET_NAME
-#df = load_dict(gsheet_mode=True, gsheet_name=gsheet_name, worksheet_name=dict_sheet_name)
 df = load_dict()
 
 cat = df['Word Category'].drop_duplicates().values 

@@ -1,4 +1,4 @@
-name: dash_test
+name: gpt4languagelearning
 channels:
   - defaults
 dependencies:
