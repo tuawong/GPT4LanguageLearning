@@ -6,8 +6,10 @@ import pandas as pd
 import uuid
 from datetime import datetime
 from pathlib import Path
+import main.Constants as Constants
 
-engine = create_engine("sqlite:///mydata.db", future=True)
+
+engine = create_engine(f"sqlite:///{Constants.DB_PATH}", future=True)
 
 # Turn on FK enforcement for SQLite connections on this engine
 if engine.url.get_backend_name() == "sqlite":

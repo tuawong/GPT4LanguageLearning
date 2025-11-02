@@ -123,6 +123,7 @@ def sql_update_worddict(df: pd.DataFrame):
     ]].to_dict(orient="records")
 
     try:
+        overlap_count, add_count = count_overlap_word(df['word'].tolist())
         with Session(engine) as session:
             # 1) Delete existing rows for these words
             session.query(WordDict)\
@@ -143,8 +144,7 @@ def sql_update_worddict(df: pd.DataFrame):
                 session.bulk_insert_mappings(QuizAgg, quizagg_init)
             
             session.commit()
-        
-        overlap_count, add_count = count_overlap_word(df['word'].tolist())
+
         message = f"Overwrite mode enabled.  Replacing {overlap_count} words and {add_count} new words added."
         return message
     
