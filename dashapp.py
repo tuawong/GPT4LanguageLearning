@@ -8,7 +8,7 @@ init_db()
 ensure_views_from_files()
 
 external_stylesheets = [dbc.themes.MATERIA]
-app = Dash(__name__, use_pages=True, external_stylesheets=external_stylesheets)
+app = Dash(__name__, use_pages=True, external_stylesheets=external_stylesheets, suppress_callback_exceptions=True)
 
 def sidebar():
     return html.Div(
