@@ -7,7 +7,10 @@ from database import init_db, ensure_views_from_files
 init_db()
 ensure_views_from_files()
 
-external_stylesheets = [dbc.themes.MATERIA]
+external_stylesheets = [
+    dbc.themes.MATERIA,
+    "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+    ]
 app = Dash(__name__, use_pages=True, external_stylesheets=external_stylesheets, suppress_callback_exceptions=True)
 
 def sidebar():
