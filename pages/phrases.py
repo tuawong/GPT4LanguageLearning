@@ -105,7 +105,7 @@ layout = dbc.Container([
 def reload_table(n_clicks):
     if n_clicks > 0:
         #df = load_dict(gsheet_mode=True, gsheet_name=gsheet_name, worksheet_name=dict_sheet_name)
-        df = load_dict()
+        df = load_phrase_dict()
         return df.to_dict('records')
     else:
         return orig_df.to_dict('records')
