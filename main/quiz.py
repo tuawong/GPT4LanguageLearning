@@ -20,7 +20,7 @@ client = OpenAI(
     api_key = Constants.API_KEY_OPENAI,
 )
 
-def get_completion(prompt, model="gpt-4o-mini", temperature=0):
+def get_completion(prompt, model="gpt-4.1-mini", temperature=0):
     messages = [{"role": "user", "content": prompt}]
     response = client.chat.completions.create(
         model=model,
@@ -85,7 +85,7 @@ def get_prompt_evaluate_quiz_meaning_only(
     Word List (Column #1):  The word list provided.  This is 1 to 1 mapping with the Word List column
     Meaning (Column #2):  The meaning provided by the students.  This is 1 to 1 mapping with the Meaning column
     Meaning Correct (Column #3):  Check whether the Provided Meaning is correct given the context sentence.  The meaning of the word has to evaluated in the context of the sentence provided. Give just yes/no response.  
-    Meaning Correction (Column #4):  If column #3 is "no" provide the correct answer.  If the meaning provided is missing, the correct meaning of the word must be provided. If the correct meaning is provided, then this column must be blank.
+    Meaning Correction (Column #4):  If column #3 is "no" provide the correct answer.  If the meaning provided is missing, the correct meaning of the word must be provided. If the correct meaning is provided, then this column must be blank.  The meaning must be in English..
 
     The table columns must be (1) Word List, (2) Meaning, (3) Meaning Correct, (4) Meaning Correction
     No changes to the column name is allowed.

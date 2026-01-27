@@ -384,7 +384,7 @@ class TranslationPipeline:
         
         return message
     
-    def run_translation_pipeline(self, word_list, translation_model="gpt-4o", rarity_model="gpt-4o-mini", temp=0.7, gsheet_mode=False):
+    def run_translation_pipeline(self, word_list, translation_model="gpt-4.1-mini", rarity_model="gpt-4.1-mini", temp=0.7, gsheet_mode=False):
         self.translation_module(word_list, translation_model=translation_model, rarity_model=rarity_model, temp=temp)   
         message = self.update_module(gsheet_mode=gsheet_mode)
         return message
