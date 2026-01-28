@@ -171,7 +171,8 @@ class QuizGenerator:
             num_words: int = 10,
             date_filter: Union[List[str], str] = None,
             category_filter: Union[List[str], str] = None, 
-            rarity_filter: Union[List[str], str] = None
+            rarity_filter: Union[List[str], str] = None,
+            new_words_only: bool = False
         ) -> pd.DataFrame:
         dict_df = self.dict_df.copy()
 
@@ -188,6 +189,9 @@ class QuizGenerator:
                 rarity_filter = [rarity_filter]
                 dict_df = dict_df[dict_df[rarity_column].isin(rarity_filter)]
 
+        if new_words_only:
+            dict_df = dict_df[dict_df['Quiz Attempts'].isna() | (dict_df['Quiz Attempts'] == 0)]
+        
         unique_ids = dict_df[id_column].unique()
         num_to_select = min(num_words, len(unique_ids))
         quiz_id = pd.Series(unique_ids).sample(n=num_to_select, replace=False)

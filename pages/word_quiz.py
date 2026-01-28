@@ -34,7 +34,7 @@ layout = dbc.Container([
                     dcc.Input(
                         id='quiz-word-num',
                         type='number',
-                        value=10,
+                        value=20,
                         min=0,
                         placeholder=None,
                         style={'width': '100%', 'marginBottom': '10px'}  # Full width with margin below
@@ -84,7 +84,16 @@ layout = dbc.Container([
                 ])
             ], className="mb-4 shadow-sm")
         ], width=4),
-        dbc.Col([dbc.Button('Generate Quiz', id='gen-quiz-button', n_clicks=0, color='primary')]),
+        dbc.Col([
+            dbc.Checklist(
+                options=[{'label': ' New Words Only', 'value': True}],
+                value=[],
+                id='new-words-only-checkbox',
+                inline=True,
+                style={'marginBottom': '10px'}
+            ),
+            dbc.Button('Generate Quiz', id='gen-quiz-button', n_clicks=0, color='primary')
+        ]),
     ], className="mb-5"),  # Space between filters and table
 
     html.Hr(),
@@ -136,10 +145,11 @@ layout = dbc.Container([
         State('date-dropdown', 'value'),
         State('category-dropdown', 'value'),
         State('rarity-dropdown', 'value'),
+        State('new-words-only-checkbox', 'value'),
         State('quiz-display', 'data'),
     ],
 )
-def handle_quiz_buttons(n_quiz_clicks, n_score_clicks, num_words, date_filter, category_filter, rarity_filter, quiz_table_data):
+def handle_quiz_buttons(n_quiz_clicks, n_score_clicks, num_words, date_filter, category_filter, rarity_filter, new_words_only, quiz_table_data):
     ctx = callback_context  # Determine which input triggered the callback
 
     # Default outputs
@@ -171,6 +181,7 @@ def handle_quiz_buttons(n_quiz_clicks, n_score_clicks, num_words, date_filter, c
             date_filter=date_filter,
             category_filter=category_filter,
             rarity_filter=rarity_filter,
+            new_words_only=bool(new_words_only),
         )
         display_df = quiz_df.drop(columns=['Word Id'])
 

@@ -29,47 +29,47 @@ def prepare_df(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def create_quiz_by_date_chart(df: pd.DataFrame) -> go.Figure:
-    """Quiz attempts by day with correct/wrong breakdown."""
+    """Quiz attempts by day with total attempts and percentage correct."""
     quiz_by_date = df.groupby('Last Quiz').agg({
         'Quiz Attempts': 'sum',
         'Num Pinyin Correct': 'sum',
-        'Num Meaning Correct': 'sum',
-        'Num Pinyin Wrong': 'sum',
-        'Num Meaning Wrong': 'sum'
+        'Num Meaning Correct': 'sum'
     }).reset_index()
 
     quiz_by_date['Total Correct'] = quiz_by_date['Num Pinyin Correct'] + quiz_by_date['Num Meaning Correct']
-    quiz_by_date['Total Wrong'] = quiz_by_date['Num Pinyin Wrong'] + quiz_by_date['Num Meaning Wrong']
+    quiz_by_date['Total Attempts'] = quiz_by_date['Quiz Attempts'] * 2  # Each quiz has pinyin and meaning
+    quiz_by_date['Correct %'] = (quiz_by_date['Total Correct'] / quiz_by_date['Total Attempts'] * 100).round(1)
 
-    fig = go.Figure()
+    fig = make_subplots(specs=[[{"secondary_y": True}]])
     fig.add_trace(go.Scatter(
         x=quiz_by_date['Last Quiz'],
-        y=quiz_by_date['Total Correct'],
+        y=quiz_by_date['Total Attempts'],
         mode='lines+markers',
-        name='Correct',
-        line=dict(color=COLORS['success'], width=2),
+        name='Total Attempts',
+        line=dict(color=COLORS['primary'], width=2),
         marker=dict(size=6),
         fill='tozeroy',
-        fillcolor='rgba(25, 135, 84, 0.1)'
-    ))
+        fillcolor='rgba(13, 110, 253, 0.1)'
+    ), secondary_y=False)
     fig.add_trace(go.Scatter(
         x=quiz_by_date['Last Quiz'],
-        y=quiz_by_date['Total Wrong'],
+        y=quiz_by_date['Correct %'],
         mode='lines+markers',
-        name='Wrong',
-        line=dict(color=COLORS['danger'], width=2),
+        name='Correct %',
+        line=dict(color=COLORS['success'], width=2),
         marker=dict(size=6)
-    ))
+    ), secondary_y=True)
     fig.update_layout(
         template=CHART_TEMPLATE,
         font=CHART_FONT,
         margin=CHART_MARGIN,
         xaxis_title='Date',
-        yaxis_title='Number of Attempts',
         hovermode='x unified',
         legend=dict(orientation='h', yanchor='bottom', y=1.02, xanchor='right', x=1),
         height=350
     )
+    fig.update_yaxes(title_text='Total Attempts', secondary_y=False)
+    fig.update_yaxes(title_text='Correct %', secondary_y=True, range=[0, 100])
     return fig
 
 
@@ -128,7 +128,8 @@ def create_top_errors_chart(df: pd.DataFrame) -> go.Figure:
     # Top 10 Pinyin Wrong
     top_pinyin = df.groupby('Word').agg({
         'Num Pinyin Wrong': 'sum',
-        'Quiz Attempts': 'sum'
+        'Quiz Attempts': 'sum',
+        'Pinyin': 'first'
     }).reset_index()
     top_pinyin = top_pinyin[top_pinyin['Quiz Attempts'] > 1]
     top_pinyin['Pinyin Wrong %'] = (top_pinyin['Num Pinyin Wrong'] / top_pinyin['Quiz Attempts'] * 100).round(1)
@@ -136,11 +137,13 @@ def create_top_errors_chart(df: pd.DataFrame) -> go.Figure:
         by=['Pinyin Wrong %', 'Num Pinyin Wrong'], ascending=[False, False]
     ).head(10)
     top_pinyin['Label'] = '(' + top_pinyin['Pinyin Wrong %'].astype(str) + '%, ' + top_pinyin['Quiz Attempts'].astype(str) + ')'
+    top_pinyin['Word Display'] = top_pinyin['Word'] + ' (' + top_pinyin['Pinyin'] + ')'
 
     # Top 10 Meaning Wrong
     top_meaning = df.groupby('Word').agg({
         'Num Meaning Wrong': 'sum',
-        'Quiz Attempts': 'sum'
+        'Quiz Attempts': 'sum',
+        'Pinyin': 'first'
     }).reset_index()
     top_meaning = top_meaning[top_meaning['Quiz Attempts'] > 1]
     top_meaning['Meaning Wrong %'] = (top_meaning['Num Meaning Wrong'] / top_meaning['Quiz Attempts'] * 100).round(1)
@@ -148,6 +151,7 @@ def create_top_errors_chart(df: pd.DataFrame) -> go.Figure:
         by=['Meaning Wrong %', 'Num Meaning Wrong'], ascending=[False, False]
     ).head(10)
     top_meaning['Label'] = '(' + top_meaning['Meaning Wrong %'].astype(str) + '%, ' + top_meaning['Quiz Attempts'].astype(str) + ')'
+    top_meaning['Word Display'] = top_meaning['Word'] + ' (' + top_meaning['Pinyin'] + ')'
 
     fig = make_subplots(
         rows=1, cols=2, 
@@ -156,7 +160,7 @@ def create_top_errors_chart(df: pd.DataFrame) -> go.Figure:
     )
 
     fig.add_trace(go.Bar(
-        y=top_pinyin['Word'],
+        y=top_pinyin['Word Display'],
         x=top_pinyin['Pinyin Wrong %'],
         orientation='h',
         marker_color=COLORS['coral'],
@@ -166,7 +170,7 @@ def create_top_errors_chart(df: pd.DataFrame) -> go.Figure:
     ), row=1, col=1)
 
     fig.add_trace(go.Bar(
-        y=top_meaning['Word'],
+        y=top_meaning['Word Display'],
         x=top_meaning['Meaning Wrong %'],
         orientation='h',
         marker_color=COLORS['steelblue'],
