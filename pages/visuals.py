@@ -69,16 +69,16 @@ layout = dbc.Container([
     # Summary Stat Cards
     dbc.Row([
         dbc.Col([
-            create_stat_card("Total Words", f"{total_words:,}", "fa-book", "primary")
+            html.Div(id='stat-total-words', children=create_stat_card("Total Words", f"{total_words:,}", "fa-book", "primary"))
         ], width=3),
         dbc.Col([
-            create_stat_card("Words Quizzed", f"{words_quizzed:,}", "fa-check-circle", "success")
+            html.Div(id='stat-words-quizzed', children=create_stat_card("Words Quizzed", f"{words_quizzed:,}", "fa-check-circle", "success"))
         ], width=3),
         dbc.Col([
-            create_stat_card("Total Attempts", f"{total_attempts:,}", "fa-clipboard-list", "info")
+            html.Div(id='stat-total-attempts', children=create_stat_card("Total Attempts", f"{total_attempts:,}", "fa-clipboard-list", "info"))
         ], width=3),
         dbc.Col([
-            create_stat_card("Avg Accuracy", f"{avg_accuracy:.1f}%", "fa-bullseye", "warning")
+            html.Div(id='stat-avg-accuracy', children=create_stat_card("Avg Accuracy", f"{avg_accuracy:.1f}%", "fa-bullseye", "warning"))
         ], width=3),
     ], className='mb-4'),
     
@@ -217,16 +217,27 @@ layout = dbc.Container([
      Output('words-by-category', 'figure'),
      Output('category-performance', 'figure'),
      Output('quiz-by-date', 'figure'),
-     Output('top-errors', 'figure')],
+     Output('top-errors', 'figure'),
+     Output('stat-total-words', 'children'),
+     Output('stat-words-quizzed', 'children'),
+     Output('stat-total-attempts', 'children'),
+     Output('stat-avg-accuracy', 'children')],
     Input('stats-reload-button', 'n_clicks')
 )
 def update_charts(n_clicks):
-    """Update all charts when reload button is clicked."""
+    """Update all charts and stats when reload button is clicked."""
     if n_clicks == 0:
         return dash.no_update
     
     df = load_dict()
     df = prepare_df(df)
+    
+    # Calculate updated summary stats
+    total_words = len(df)
+    words_quizzed = (df['Quiz Attempts'] > 0).sum()
+    total_attempts = df['Quiz Attempts'].sum()
+    avg_accuracy = ((df['Num Pinyin Correct'].sum() + df['Num Meaning Correct'].sum()) / 
+                    (2 * total_attempts) * 100) if total_attempts > 0 else 0
     
     return (
         create_vocabulary_growth_chart(df),
@@ -234,5 +245,9 @@ def update_charts(n_clicks):
         create_words_by_category_chart(df),
         create_category_performance_chart(df),
         create_quiz_by_date_chart(df),
-        create_top_errors_chart(df)
+        create_top_errors_chart(df),
+        create_stat_card("Total Words", f"{total_words:,}", "fa-book", "primary"),
+        create_stat_card("Words Quizzed", f"{words_quizzed:,}", "fa-check-circle", "success"),
+        create_stat_card("Total Attempts", f"{total_attempts:,}", "fa-clipboard-list", "info"),
+        create_stat_card("Avg Accuracy", f"{avg_accuracy:.1f}%", "fa-bullseye", "warning")
     )

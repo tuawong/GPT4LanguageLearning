@@ -11,6 +11,7 @@ from main.sql import load_dict
 
 ensure_views_from_files()
 orig_df = load_dict()
+orig_df = orig_df.sort_index(ascending=False)
 
 # Don't really need to show Pinyin Simplified column
 orig_df = orig_df.drop(columns=['Pinyin Simplified'])
@@ -127,6 +128,7 @@ layout = dbc.Container([
 def reload_table(n_clicks):
     if n_clicks > 0:
         df = load_dict()
+        df = df.sort_index(ascending=False)
         return df.to_dict('records')
     else:
         return orig_df.to_dict('records')
