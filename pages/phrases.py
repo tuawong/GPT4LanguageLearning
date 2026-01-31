@@ -15,6 +15,7 @@ gsheet_name = Constants.SHEET_NAME
 #orig_df = load_dict(gsheet_mode=True, gsheet_name=gsheet_name, worksheet_name=dict_sheet_name)
 orig_df = load_phrase_dict()
 orig_df = orig_df[['Phrase Id', 'Added Date', 'Complexity', 'Category', 'Tone', 'Line', 'Pinyin', 'Meaning', 'Response', 'Response Pinyin','Response Meaning']]
+orig_df = orig_df.sort_index(ascending=False)
 
 phrase_category = orig_df['Category'].drop_duplicates().sort_values().to_list()
 phrase_date = orig_df['Added Date'].drop_duplicates().sort_values().to_list()
@@ -106,6 +107,7 @@ def reload_table(n_clicks):
     if n_clicks > 0:
         #df = load_dict(gsheet_mode=True, gsheet_name=gsheet_name, worksheet_name=dict_sheet_name)
         df = load_phrase_dict()
+        df = df.sort_index(ascending=False)
         return df.to_dict('records')
     else:
         return orig_df.to_dict('records')

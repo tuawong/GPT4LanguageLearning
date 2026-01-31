@@ -83,8 +83,8 @@ layout = dbc.Container([
             dbc.ButtonGroup([
                 dbc.Button('Generate Phrase', id='gen-phrase-button', n_clicks=0, color='primary'),
             ])
-        ], width=0.8),
-    ]),
+        ], width="auto", className="d-flex align-items-center"),
+    ], className="mb-3"),
     
     dbc.Row([
         dbc.Col([
@@ -107,8 +107,8 @@ layout = dbc.Container([
             dbc.ButtonGroup([
                 dbc.Button('Generate Response', id='gen-response-button', n_clicks=0, color='secondary'),
             ])
-        ], width=0.8),
-    ]),
+        ], width="auto", className="d-flex align-items-center"),
+    ], className="mb-3"),
 
     dbc.Row([
         dbc.Col([
@@ -131,8 +131,8 @@ layout = dbc.Container([
             dbc.ButtonGroup([
                 dbc.Button('Generate Translation', id='gen-translation-button', n_clicks=0, color='primary'),
             ])
-        ], width=0.8),
-    ]),
+        ], width="auto", className="d-flex align-items-center"),
+    ], className="mb-3"),
     
     
     # Filter dropdowns with space in between
