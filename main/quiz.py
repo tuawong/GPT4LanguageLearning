@@ -84,7 +84,8 @@ def get_prompt_evaluate_quiz_meaning_only(
     Please generate the following table with the following columns: 
     Word List (Column #1):  The word list provided.  This is 1 to 1 mapping with the Word List column
     Meaning (Column #2):  The meaning provided by the students.  This is 1 to 1 mapping with the Meaning column
-    Meaning Correct (Column #3):  Check whether the Provided Meaning is correct given the context sentence.  The meaning of the word has to evaluated in the context of the sentence provided. Give just yes/no response.  
+    Meaning Correct (Column #6):  Check whether the Provided Meaning is correct relative to the Word List.  Give just yes/no response.  Minor typos/grammatical error can be ignored but the overall meaning should be correct 
+        (eg. cigarette vs cigarrete can be considered correct, but cigarette vs dog would be incorrect).  Similarly synonyms can be considered correct (cigarette vs smokes vs tobacco can be considered correct).
     Meaning Correction (Column #4):  If column #3 is "no" provide the correct answer.  If the meaning provided is missing, the correct meaning of the word must be provided. If the correct meaning is provided, then this column must be blank.  The meaning must be in English..
 
     The table columns must be (1) Word List, (2) Meaning, (3) Meaning Correct, (4) Meaning Correction
@@ -113,7 +114,8 @@ def get_prompt_evaluate_quiz(
     Meaning (Column #3):  Should be a value from this list {meaning}
     Pinyin Correct (Column #4):  Check whether the Provided Pinyin is correct relative to the Word List.  Give just yes/no response.
     Correct Pinyin (Column #5):  Should contain the correct pinyin if the answer is incorrect.  Blank otherwise. When pinyin is incorrect only the correct pinyin should be provided, no other text is allowed
-    Meaning Correct (Column #6):  Check whether the Provided Meaning is correct relative to the Word List.  Give just yes/no response.  
+    Meaning Correct (Column #6):  Check whether the Provided Meaning is correct relative to the Word List.  Give just yes/no response.  Minor typos/grammatical error can be ignored but the overall meaning should be correct 
+        (eg. cigarette vs cigarrete can be considered correct, but cigarette vs dog would be incorrect).  Similarly synonyms can be considered correct (cigarette vs smokes vs tobacco can be considered correct).
     Correct Meaning (Column #7):  If column #6 is "no" provide short explanation of why the meaning is incorrect and provide correct answer.  If column #6 is "yes" then must be blank. 
 
     The tone for the pinyin will be provided with number 1, 2, 3, 4, 5

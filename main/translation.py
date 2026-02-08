@@ -67,6 +67,8 @@ def get_prompt_for_chinese_translation(chinese_words, existing_categories=cat):
     4. Type:   Noun (This should be adjusted whether the meaning of the word is noun/adjective/verb based on the meaning and example sentence)
     5. Word Category: Agriculture (This should be a general category that the word belongs to)
     5. Meaning:  Farm (This is could be a longer description of the meaning of the word if no exact translation exists in English.  If this is a common word in English, then only one word translation is sufficient)
+        For words with nuanced meanings, the meaning column should capture the nuance in the meaning of the word. For words that can have be mapped to single English word, but has nuanced meaning in Chinese, the meaning column should capture the nuance of the word.
+        For example 说, 讲, 聊, 谈, 吵, all can be translated to "talk" or "speak" in English, but each word has its own nuance in Chinese.  The meaning column should capture the nuance of each word.
     6. Sentence:  我暑假打算去爷爷的农场帮忙  
     7. Sentence Pinyin:  Wǒ shǔjià dǎsuàn qù yéye de nóngchǎng bāngmáng. 
     8. Sentence Meaning:  I plan to go to my grandfather's farm to help during the summer vacation.
@@ -80,6 +82,14 @@ def get_prompt_for_chinese_translation(chinese_words, existing_categories=cat):
     Do NOT provide incomplete one word translations for words that have nuanced meanings.  
     Example words with nuanced translations:
 
+    Word: 说 
+    Incomplete Literal Translation: To speak --> (Incorrect)
+    Nuanced Translation: To convey information or express thoughts through spoken language, often in a more formal or structured manner. --> (Correct)
+    
+    Word: 讲
+    Incomplete Literal Translation: To speak --> (Incorrect)
+    Nuanced Translation: To tell or narrate something, often with an emphasis on the content or story being shared. --> (Correct)
+    
     Word: 包容
     Incomplete Literal Translation: Tolerance --> (Incorrect)
     Nuanced Translation: To accept differences with understanding, not just putting up with them. --> (Correct)
@@ -105,7 +115,7 @@ def get_prompt_for_chinese_translation(chinese_words, existing_categories=cat):
     Correct Nuanced Translation: A period or moment in time; often used poetically to refer to the passage of time. --> (Correct)
 
     Conversely, if a word has a simple translation that is sufficient to capture the meaning, then only provide the simple translation.  
-    Do not provide a nuanced translation if the simple translation is sufficient.  
+    Do not provide a nuanced translation if the simple translation is sufficient and do not provide explanation for simple concepts if there is no nuance to the word.
     In this case, do not nuance along the simple translation.  Only provide the simple translation.
     Example words with simple translations:
     Word: 爱 (ài)
@@ -204,7 +214,7 @@ def get_prompt_for_multiclass_rarity_classification(chinese_words, debug=False):
     Each word should be outputted as a single row in a table. 
     No other written response should be outputted except for the table.  
     The columns in the table should be as follows:
-    1) Word:  农场 (If the word provided is in traditional Chinese, then replace it with the simplified version.  Do not both words in parentheses)
+    1) Word:  农场 (If the word provided is in traditional Chinese, then replace it with the simplified version.  Do not put both words in parentheses. Do not add anything else in the Word column except for the simplified version of the word.)
     2) Word Rarity:  Common (This should be adjusted based on the rarity of the word with the two options Common or Rare)
     Do not change the column names or the order of the columns.  Only include the columns above in the table.
 
@@ -335,6 +345,7 @@ class TranslationPipeline:
             get_completion(
                 prompt=get_prompt_for_rarity_classification(word_list), model=rarity_model, temperature=temp))
         word_rarity_df = parse_response_table(rarity_response.choices[0].message.content)
+        #print(word_rarity_df)
 
         max_retries = 3
         for retry in range(max_retries):
