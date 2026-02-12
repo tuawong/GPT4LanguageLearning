@@ -210,6 +210,10 @@ def handle_quiz_buttons(n_quiz_clicks, n_score_clicks, num_words, date_filter, c
 
             quiz_generator.output_quiz_log(gsheet_mode=False)
 
+            # Reload dataset so "New Words Only" filter reflects updated quiz status
+            updated_df = load_dict()
+            quiz_generator.df = updated_df
+
             quiz_generator.quiz_result = None  # Reset quiz result after scoring
 
     return display_data, display_columns, message
