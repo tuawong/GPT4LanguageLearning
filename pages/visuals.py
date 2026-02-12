@@ -190,7 +190,7 @@ layout = dbc.Container([
                     )
                 ])
             ], className="shadow-sm h-100")
-        ], width=9),
+        ], width=8),
         dbc.Col([
             dbc.Card([
                 dbc.CardHeader([
@@ -205,7 +205,7 @@ layout = dbc.Container([
                     )
                 ])
             ], className="shadow-sm h-100")
-        ], width=3),
+        ], width=4),
     ], className='mb-4'),
     
 ], fluid=True, className="px-4 py-3")

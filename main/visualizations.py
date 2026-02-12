@@ -251,16 +251,23 @@ def create_vocabulary_growth_chart(df: pd.DataFrame) -> go.Figure:
 
 
 def create_quiz_coverage_chart(df: pd.DataFrame) -> go.Figure:
-    """Words quizzed vs not quizzed (donut chart)."""
-    quizzed = (df['Quiz Attempts'] > 0).sum()
-    not_quizzed = (df['Quiz Attempts'] == 0).sum()
+    """Words quizzed vs not quizzed by rarity (donut chart with 4 categories)."""
+    common_df = df[df['Word Rarity'] == 'Common']
+    rare_df = df[df['Word Rarity'] == 'Rare']
+
+    common_quizzed = (common_df['Quiz Attempts'] > 0).sum()
+    common_not_quizzed = (common_df['Quiz Attempts'] == 0).sum()
+    rare_quizzed = (rare_df['Quiz Attempts'] > 0).sum()
+    rare_not_quizzed = (rare_df['Quiz Attempts'] == 0).sum()
+
+    total_quizzed = common_quizzed + rare_quizzed
 
     fig = go.Figure(go.Pie(
-        labels=['Quizzed', 'Not Quizzed'],
-        values=[quizzed, not_quizzed],
-        marker_colors=[COLORS['success'], '#e9ecef'],
+        labels=['Common - Quizzed', 'Common - Not Quizzed', 'Rare - Quizzed', 'Rare - Not Quizzed'],
+        values=[common_quizzed, common_not_quizzed, rare_quizzed, rare_not_quizzed],
+        marker_colors=[COLORS['success'], '#a3cfbb', COLORS['steelblue'], '#a8c8e0'],
         textinfo='label+percent',
-        textfont=dict(size=12),
+        textfont=dict(size=11),
         hole=0.5,
         hovertemplate='%{label}: %{value} words<extra></extra>'
     ))
@@ -269,11 +276,11 @@ def create_quiz_coverage_chart(df: pd.DataFrame) -> go.Figure:
         font=CHART_FONT,
         margin=dict(l=20, r=20, t=20, b=20),
         showlegend=False,
-        height=300,
+        height=400,
         annotations=[dict(
-            text=f'{quizzed}<br>quizzed',
+            text=f'{total_quizzed}<br>quizzed',
             x=0.5, y=0.5,
-            font_size=14,
+            font_size=16,
             showarrow=False
         )]
     )
