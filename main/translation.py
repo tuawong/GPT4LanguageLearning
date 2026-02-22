@@ -18,7 +18,7 @@ from main.sql import sql_update_worddict
 # Incorporate data
 df = load_dict()
 
-cat = df['Word Category'].drop_duplicates().values 
+# cat = df['Word Category'].drop_duplicates().values 
 #cat = ['General', 'Grammar', 'Direction', 'Opinion', 'Time',
 #       'Description', 'Organization', 'Travel', 'Social', 'Technology',
 #       'Health', 'Object', 'Work', 'Intent', 'Geography', 'Agriculture',
@@ -56,7 +56,33 @@ def get_prompt_for_word_comparison(word1, word2):
 
 
 
-def get_prompt_for_chinese_translation(chinese_words, existing_categories=cat):
+def get_categories_with_examples(data_dict: pd.DataFrame, top_n: int = 3) -> dict:
+    """
+    Create a dictionary mapping category names to their top N sample words.
+    
+    Args:
+        data_dict: DataFrame with 'Word Category' and 'Word' columns
+        top_n: Number of sample words to include per category
+    
+    Returns:
+        Dictionary mapping category name to list of sample words
+    """
+    categories_dict = {}
+    for category in data_dict['Word Category'].drop_duplicates():
+        words = data_dict[data_dict['Word Category'] == category]['Word'].drop_duplicates().head(top_n).tolist()
+        categories_dict[category] = words
+    return categories_dict
+
+
+def get_prompt_for_chinese_translation(chinese_words, category_examples=get_categories_with_examples(df)):
+    # Build category description with examples
+    categories_description = ""
+    if category_examples and isinstance(category_examples, dict):
+        categories_description = "Existing Categories (with example words):\n"
+        for category, words in sorted(category_examples.items()):
+            words_str = ", ".join(words) if words else "no examples"
+            categories_description += f"- {category}: {words_str}\n"
+
     chinese_prompt =  f"""
     For each of the input Chinese words, please output the following as a one row in a table.  There should be the following columns in table related to the word.  
 
@@ -74,6 +100,7 @@ def get_prompt_for_chinese_translation(chinese_words, existing_categories=cat):
     8. Sentence Meaning:  I plan to go to my grandfather's farm to help during the summer vacation.
 
     For each word with multiple meanings, add more rows to the the table with alternate meaning and example sentence.  Each row should have a unique meaning.
+    For single word input, do not add more rows for compound word meaning.  For example, if the word is 东, do not add line with meaing for 东西.  
     If there is only one meaning, then keep only one row for each word.  Do not add rows for alternate meanings if there is only one meaning.  If the two meanings are sufficiently similar then they can be included in the same row.
     If the meanings are different, then the second meaning should be in a new row with the same word, pinyin, word type, and sentence.  Don't omit any values in any row even if they are the same as the row above.
 
@@ -117,6 +144,8 @@ def get_prompt_for_chinese_translation(chinese_words, existing_categories=cat):
     Conversely, if a word has a simple translation that is sufficient to capture the meaning, then only provide the simple translation.  
     Do not provide a nuanced translation if the simple translation is sufficient and do not provide explanation for simple concepts if there is no nuance to the word.
     In this case, do not nuance along the simple translation.  Only provide the simple translation.
+    DO NOT expound on a simple word either for example (Fat: Having a lot of excess flesh --> Incorrect) or for a more nuanced word (Love: An intense feeling of deep affection --> Incorrect).  Only provide the simple translation if the simple translation is sufficient to capture the meaning of the word.  Do not provide an explanation for the word if there is no nuance to the word.
+    
     Example words with simple translations:
     Word: 爱 (ài)
     Literal Translation: Love --> (Correct)
@@ -124,7 +153,7 @@ def get_prompt_for_chinese_translation(chinese_words, existing_categories=cat):
 
     Word: 陌生人 (mòshēngrén)
     Literal Translation: Stranger --> (Correct)
-    Explained Translation: A person whom one does not know --> (Incorrect)
+    Explained Translation: Stranger, a person whom one does not know --> (Incorrect)
     
     Word: 水 (shuǐ)
     Literal Translation: Water  --> (Correct)
@@ -132,7 +161,7 @@ def get_prompt_for_chinese_translation(chinese_words, existing_categories=cat):
 
     Word: 狗 (gǒu)
     Literal Translation: Dog  --> (Correct)
-    Explained Translation: A domesticated carnivorous mammal that typically has a long snout, an acute sense of smell, nonretractable claws, and a barking, howling, or whining voice --> (Incorrect)
+    Explained Translation: Dog; A domesticated carnivorous mammal that typically has a long snout, an acute sense of smell, nonretractable claws, and a barking, howling, or whining voice --> (Incorrect)
 
     Word: 吹 (chuī)
     Literal Translation: To blow  --> (Correct)
@@ -142,60 +171,22 @@ def get_prompt_for_chinese_translation(chinese_words, existing_categories=cat):
     Literal Translation: Time  --> (Correct)
     Explained Translation: The indefinite continued progress of existence --> (Incorrect)
 
-    Word: 客户 (kèhù)
-    Literal Translation: Client  --> (Correct)
-    Explained Translation: Client; a person or organization using the services of a professional or business.  --> (Incorrect)
-
     Input Chinese Word = {chinese_words}
     Do not include any word that is not in the list {chinese_words} in the Word column of the ouput table
     
     All input words should be included in one table.  Only return the table with no other text.
     """
 
-    if existing_categories is not None:
+    if category_examples is not None:
         chinese_prompt = f"""
             {chinese_prompt}
 
-            Existing Categories: {','.join(existing_categories)}"
-            The categories above already exist in the database.  Only add new category if the word does not fit into any of the existing categories.
+            {categories_description}
+            
+            The categories above already exist in the database.  Use the example words provided to better understand each category.
+            Only add a new category if the word does not fit into any of the existing categories.
             """
 
-    return chinese_prompt
-
-def get_prompt_for_rarity_classification(chinese_words, debug=False):
-    chinese_prompt =  f"""
-    For each of the input Chinese please generate a classification of how rare they word is.
-
-    Rarity Classification:  
-    Common:  Used in everyday conversations or in formal situations.
-    Rare:  Used only in a more poetic/literary sense.  Will typically only seen in songs or poem or literature.  Very rarely used in conversation. 
-    If a word is both often used in both common conversation and in literature, it MUST be classified as common.  
-    Only classify words as rare if they are not used in everyday conversation.  
-
-    Each word should be outputted as a single row in a table. 
-    No other written response should be outputted except for the table.  No text or symbols should be outputted except for the table.
-    The columns in the table should be as follows:
-    1) Word:  农场 (If the word provided is in traditional Chinese, then the simplified version should be provided in parentheses)
-    2) Word Rarity:  Common (This should be adjusted based on the rarity of the word)
-    Do not change the column names or the order of the columns.  Only include the columns above in the table.
-
-    Input Chinese Word = {chinese_words}
-    Do not include any word that is not in the list {chinese_words} in the Word column of the ouput table
-    If there is duplicate in the word list, then only include the word once in the table.  
-    Do not include the same word multiple times in the table.
-    """
-
-    
-    if debug:
-        chinese_prompt = f"""
-            {chinese_prompt}
-
-            In addition to the first two columns, also include the following columns in the table.
-            3) Pinyin:  nóng chǎng  (This is a column of proper pinyin.  All the tones should be shown explicitly, no number representation for tone allowed in this column)
-            4) Meaning:  Farm (This is could be a longer description of the meaning of the word if no exact translation exists in English.  If this is a common word in English, then only one word translation is sufficient)
-            5) Justification:  Provide a brief explanation of why the word is classified as common, uncommon, or rare.  This should be a brief explanation of why the word is classified as such.  
-            """
-        
     return chinese_prompt
 
 # Multiclass rarity classification into common, uncommon, and rare is still difficult 
@@ -205,21 +196,24 @@ def get_prompt_for_multiclass_rarity_classification(chinese_words, debug=False):
     For each of the input Chinese please generate a classification of how rare they word is.
 
     Rarity Classification:  
-    Common:  Used in everyday conversations.  
-    Uncommon:  Used in conversation but during formal situation such as in when you're in a meeting or talking to someone to be respected.  
+    Common:  Used in everyday conversations or to faciliatate daily life/grocery.  
+    Uncommon:  Used in every day conversation but may not be the most commonly used except for specific contexts.  More uncommon categories of produce/plant/animals/countries belong here as well.  
     Rare:  Used only in a more poetic/literary sense.  Will typically only seen in songs or poem or literature.  Very rarely used in conversation. 
     If a word is both often used in both common conversation and in literature, it MUST be classified as common.  
+    The distinction between uncommon and rare is that rare words are ONLY used in a poetic/literary sense and are very rarely used in conversation, while uncommon words are used in niche conversation topics that may show up in current days.
     Only classify words as uncommon or rare if they are not used in everyday conversation.  
 
     Each word should be outputted as a single row in a table. 
     No other written response should be outputted except for the table.  
     The columns in the table should be as follows:
     1) Word:  农场 (If the word provided is in traditional Chinese, then replace it with the simplified version.  Do not put both words in parentheses. Do not add anything else in the Word column except for the simplified version of the word.)
-    2) Word Rarity:  Common (This should be adjusted based on the rarity of the word with the two options Common or Rare)
+    2) Word Rarity:  Common (This should be adjusted based on the rarity of the word with the three options Common, Uncommon, or Rare)
     Do not change the column names or the order of the columns.  Only include the columns above in the table.
-
-    Example Words Common: 太太, 主意, 酒店, 超市, 带, 多久
-    Example Words Rare: 奢求, 空虚, 时光, 仰望, 侧脸
+    Idioms are automatically rare. 
+    
+    Example Words Common: 太太, 主意, 酒店, 超市, 带, 多久，澳大利亚， 树叶， 西红柿， 蒜
+    Example Words Uncommon: 菊花， 桂花，奥运会，埃塞俄比亚， 机器学习，人工智能, 苤藍, 松子
+    Example Words Rare: 奢求, 空虚, 时光, 仰望, 侧脸， 殿下, 不必多言， 告辞
 
     Input Chinese Word = {chinese_words}
     Do not include any word that is not in the list {chinese_words} in the Word column of the ouput table
@@ -343,21 +337,22 @@ class TranslationPipeline:
         ## Generate words rarity classification
         rarity_response = (
             get_completion(
-                prompt=get_prompt_for_rarity_classification(word_list), model=rarity_model, temperature=temp))
+                prompt=get_prompt_for_multiclass_rarity_classification(word_list), model=rarity_model, temperature=temp))
         word_rarity_df = parse_response_table(rarity_response.choices[0].message.content)
         #print(word_rarity_df)
 
         max_retries = 3
         for retry in range(max_retries):
-            if word_rarity_df['Word Rarity'].notna().min() > 0: 
-                break
-            else:
-                print(f"Retrying rarity classification for {word_list} due to empty Rarity column. Attempt {retry + 1}/{max_retries}")
-                time.sleep(1) 
-                rarity_response = (
-                    get_completion(
-                        prompt=get_prompt_for_rarity_classification(word_list), model=rarity_model, temperature=temp))
-                word_rarity_df = parse_response_table(rarity_response.choices[0].message.content)
+            if 'Word Rarity' in word_rarity_df:
+                if word_rarity_df['Word Rarity'].notna().min() > 0: 
+                    break
+                else:
+                    print(f"Retrying rarity classification for {word_list} due to empty Rarity column. Attempt {retry + 1}/{max_retries}")
+                    time.sleep(1) 
+                    rarity_response = (
+                        get_completion(
+                            prompt=get_prompt_for_multiclass_rarity_classification(word_list), model=rarity_model, temperature=temp))
+                    word_rarity_df = parse_response_table(rarity_response.choices[0].message.content)
 
         newwords_df = pd.merge(newwords_df, word_rarity_df, on='Word', how='left')
 
