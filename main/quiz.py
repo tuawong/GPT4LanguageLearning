@@ -186,14 +186,13 @@ class QuizGenerator:
                 category_filter = [category_filter]
                 dict_df = dict_df[dict_df[category_column].isin(category_filter)]
 
+        # rarity_filter is now a checklist.  Will have to handle the data type correctly 
         if rarity_filter is not None:
-            if type(rarity_filter) == str:
-                rarity_filter = [rarity_filter]
-                dict_df = dict_df[dict_df[rarity_column].isin(rarity_filter)]
+            dict_df = dict_df[dict_df[rarity_column].isin(rarity_filter)]
 
         if new_words_only:
             dict_df = dict_df[dict_df['Quiz Attempts'].isna() | (dict_df['Quiz Attempts'] == 0)]
-        
+            
         unique_ids = dict_df[id_column].unique()
         num_to_select = min(num_words, len(unique_ids))
         quiz_id = pd.Series(unique_ids).sample(n=num_to_select, replace=False)

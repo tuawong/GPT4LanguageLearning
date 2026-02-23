@@ -76,10 +76,11 @@ layout = dbc.Container([
             dbc.Card([
                 dbc.CardBody([
                     html.B("Rarity Filter"),
-                    dcc.Dropdown(
-                        options=[{'label': option, 'value': option} for option in ['All'] + word_rarity],
-                        value='All',
+                    dbc.Checklist(
+                        options=[{'label': option, 'value': option} for option in word_rarity],
+                        value=word_rarity,
                         id='rarity-dropdown',
+                        inline=True,
                     )
                 ])
             ], className="mb-4 shadow-sm")
@@ -151,12 +152,12 @@ layout = dbc.Container([
 )
 def handle_quiz_buttons(n_quiz_clicks, n_score_clicks, num_words, date_filter, category_filter, rarity_filter, new_words_only, quiz_table_data):
     ctx = callback_context  # Determine which input triggered the callback
-
+    
     # Default outputs
     display_data = []
     display_columns = []
     message = ""
-
+    
     if not ctx.triggered:
         return display_data, display_columns, message
 
@@ -202,11 +203,6 @@ def handle_quiz_buttons(n_quiz_clicks, n_score_clicks, num_words, date_filter, c
             display_data = quiz_result.to_dict('records')
             display_columns = [{"name": i, "id": i} for i in quiz_result.columns]
             message = "Quiz Scored!"
-
-            #quiz_generator.update_quiz_score(
-            #    gsheet_name = gsheet_name, 
-            #    wks_name = 'Tua_List'
-            #)
 
             quiz_generator.output_quiz_log(gsheet_mode=False)
 
