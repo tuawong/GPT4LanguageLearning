@@ -251,21 +251,30 @@ def create_vocabulary_growth_chart(df: pd.DataFrame) -> go.Figure:
 
 
 def create_quiz_coverage_chart(df: pd.DataFrame) -> go.Figure:
-    """Words quizzed vs not quizzed by rarity (donut chart with 4 categories)."""
+    """Words quizzed vs not quizzed by rarity (donut chart with 6 categories)."""
     common_df = df[df['Word Rarity'] == 'Common']
+    uncommon_df = df[df['Word Rarity'] == 'Uncommon']
     rare_df = df[df['Word Rarity'] == 'Rare']
 
     common_quizzed = (common_df['Quiz Attempts'] > 0).sum()
     common_not_quizzed = (common_df['Quiz Attempts'] == 0).sum()
+    uncommon_quizzed = (uncommon_df['Quiz Attempts'] > 0).sum()
+    uncommon_not_quizzed = (uncommon_df['Quiz Attempts'] == 0).sum()
     rare_quizzed = (rare_df['Quiz Attempts'] > 0).sum()
     rare_not_quizzed = (rare_df['Quiz Attempts'] == 0).sum()
 
-    total_quizzed = common_quizzed + rare_quizzed
+    total_quizzed = common_quizzed + uncommon_quizzed + rare_quizzed
 
     fig = go.Figure(go.Pie(
-        labels=['Common - Quizzed', 'Common - Not Quizzed', 'Rare - Quizzed', 'Rare - Not Quizzed'],
-        values=[common_quizzed, common_not_quizzed, rare_quizzed, rare_not_quizzed],
-        marker_colors=[COLORS['success'], '#a3cfbb', COLORS['steelblue'], '#a8c8e0'],
+        labels=['Common - Quizzed', 'Common - Not Quizzed', 
+                'Uncommon - Quizzed', 'Uncommon - Not Quizzed',
+                'Rare - Quizzed', 'Rare - Not Quizzed'],
+        values=[common_quizzed, common_not_quizzed, 
+                uncommon_quizzed, uncommon_not_quizzed,
+                rare_quizzed, rare_not_quizzed],
+        marker_colors=[COLORS['success'], '#a3cfbb', 
+                       COLORS['warning'], '#ffe69c',
+                       COLORS['steelblue'], '#a8c8e0'],
         textinfo='label+percent',
         textfont=dict(size=11),
         hole=0.5,
