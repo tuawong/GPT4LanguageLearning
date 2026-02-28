@@ -223,6 +223,7 @@ class QuizGenerator:
             spread_power: float = 1.0,
             seed: float = 0.01
         ) -> pd.DataFrame:
+        self.spread_power = spread_power if adaptive_sampling else 1.0
         dict_df = self.dict_df.copy()
 
         if date_filter is not None:
@@ -324,6 +325,7 @@ class QuizGenerator:
             ], axis=1)
 
         outdf['last_quiz'] = datetime.now().strftime('%Y-%m-%d')
+        outdf['Adaptive Sample Scale'] = getattr(self, 'spread_power', 1.0)
         self.quiz_result = outdf
         return outdf
 

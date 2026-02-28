@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, func
+from sqlalchemy import Column, Integer, Float, String, DateTime, func
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import declarative_base
 from .base import Base
@@ -17,3 +17,4 @@ class QuizLog(Base):
     meaning_correct = Column(String, nullable=False)
     meaning_correction = Column(String, nullable=False)
     last_quiz = Column(DateTime(timezone=True), server_default=func.now())
+    adaptive_sample_scale = Column(Float, nullable=True, default=1.0)
