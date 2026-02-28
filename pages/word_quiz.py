@@ -43,6 +43,48 @@ layout = dbc.Container([
                 ])
             ], className="mb-4 shadow-sm"),
         ], width=4),
+        dbc.Col([
+            dbc.Card([
+                dbc.CardBody([
+                    dbc.Row([
+                        dbc.Col([
+                            html.B("Adaptive Sampling"),
+                            dbc.Switch(
+                                id='adaptive-sampling-toggle',
+                                value=True,
+                                label='Focus on weak words',
+                                style={'marginTop': '5px'}
+                            ),
+                        ], width=4),
+                        dbc.Col([
+                            html.B("Focus Strength"),
+                            html.Div(
+                                '1.0x (baseline)',
+                                id='spread-power-display',
+                                style={'color': 'gray', 'fontSize': '12px'}
+                            ),
+                            dcc.Slider(
+                                id='spread-power-slider',
+                                min=0.25,
+                                max=3.0,
+                                step=0.25,
+                                value=1.0,
+                                marks={
+                                    0.25: {'label': '0.25x', 'style': {'fontSize': '11px'}},
+                                    1.0:  {'label': '1x (default)', 'style': {'fontSize': '11px'}},
+                                    2.0:  {'label': '2x', 'style': {'fontSize': '11px'}},
+                                    3.0:  {'label': '3x', 'style': {'fontSize': '11px'}},
+                                },
+                            ),
+                            html.Div(
+                                '← More uniform    |    More focused on weak words →',
+                                style={'color': 'gray', 'fontSize': '11px', 'textAlign': 'center', 'marginTop': '4px'}
+                            ),
+                        ], width=8),
+                    ])
+                ])
+            ], className="mb-4 shadow-sm")
+        ], width=8),
     ]),
     # Filter dropdowns with space in between
     dbc.Row([
@@ -95,9 +137,12 @@ layout = dbc.Container([
             ),
             dbc.Button('Generate Quiz', id='gen-quiz-button', n_clicks=0, color='primary')
         ]),
-    ], className="mb-5"),  # Space between filters and table
+    ], className="mb-3"),
 
-    html.Hr(),
+
+
+    html.Hr(),  # Space between filters and table
+
     # Data table with additional margin and styling
     dbc.Row(dbc.Col(
         dash_table.DataTable(
@@ -132,6 +177,14 @@ layout = dbc.Container([
 
 
 @callback(
+    Output('spread-power-display', 'children'),
+    Input('spread-power-slider', 'value'),
+)
+def update_spread_label(value):
+    return f'{value}x (baseline)' if value == 1.0 else f'{value}x'
+
+
+@callback(
     [
         Output(component_id='quiz-display', component_property='data'),
         Output(component_id='quiz-display', component_property='columns'),
@@ -147,10 +200,12 @@ layout = dbc.Container([
         State('category-dropdown', 'value'),
         State('rarity-dropdown', 'value'),
         State('new-words-only-checkbox', 'value'),
+        State('adaptive-sampling-toggle', 'value'),
+        State('spread-power-slider', 'value'),
         State('quiz-display', 'data'),
     ],
 )
-def handle_quiz_buttons(n_quiz_clicks, n_score_clicks, num_words, date_filter, category_filter, rarity_filter, new_words_only, quiz_table_data):
+def handle_quiz_buttons(n_quiz_clicks, n_score_clicks, num_words, date_filter, category_filter, rarity_filter, new_words_only, adaptive_sampling, spread_power, quiz_table_data):
     ctx = callback_context  # Determine which input triggered the callback
     
     # Default outputs
@@ -183,6 +238,8 @@ def handle_quiz_buttons(n_quiz_clicks, n_score_clicks, num_words, date_filter, c
             category_filter=category_filter,
             rarity_filter=rarity_filter,
             new_words_only=bool(new_words_only),
+            adaptive_sampling=bool(adaptive_sampling),
+            spread_power=float(spread_power) if spread_power is not None else 1.0,
         )
         display_df = quiz_df.drop(columns=['Word Id'])
 

@@ -30,6 +30,50 @@ def get_completion(prompt, model="gpt-4.1-mini", temperature=0):
     return response
 
 
+def calculate_adaptive_weights(
+    df: pd.DataFrame,
+    seed: float = 0.01,
+    spread_power: float = 1.0
+) -> np.ndarray:
+    """
+    Calculate adaptive sampling weights based on quiz performance.
+
+    Words with more combined wrong answers (pinyin + meaning) are sampled
+    more frequently. Words with more combined correct answers are down-weighted.
+
+    Formula:
+        num_wrong   = Num Pinyin Wrong  + Num Meaning Wrong
+        num_correct = Num Pinyin Correct + Num Meaning Correct
+        base_weight = (num_wrong + max(0, max_wrong - num_correct))
+                      / (max_wrong + max_correct)  +  seed
+        final_weight = base_weight ^ spread_power   (then normalized)
+
+    Args:
+        df:           filtered word DataFrame (must contain Num Pinyin Wrong,
+                      Num Meaning Wrong, Num Pinyin Correct, Num Meaning Correct)
+        seed:         minimum floor weight to prevent zero probability (default 0.01)
+        spread_power: exponent applied after computing base weights.
+                      >1 widens gap toward problem words,
+                      <1 flattens toward uniform,
+                      1.0 is the baseline (default)
+    Returns:
+        normalized probability array aligned to df index
+    """
+    num_wrong   = df['Num Pinyin Wrong']   + df['Num Meaning Wrong']
+    num_correct = df['Num Pinyin Correct'] + df['Num Meaning Correct']
+
+    max_wrong   = num_wrong.max()
+    max_correct = num_correct.max()
+    denominator = max_wrong + max_correct
+
+    if denominator == 0:  # all new words with no history yet
+        return np.ones(len(df)) / len(df)
+
+    base    = (num_wrong + (max_wrong - num_correct).clip(lower=0)) / denominator + seed
+    powered = base ** spread_power
+    return (powered / powered.sum()).values
+
+
 def get_prompt_generate_word_quiz(
     word_dict: pd.DataFrame,
     startfrom_date_filter: str = None,
@@ -174,7 +218,10 @@ class QuizGenerator:
             date_filter: Union[List[str], str] = None,
             category_filter: Union[List[str], str] = None, 
             rarity_filter: Union[List[str], str] = None,
-            new_words_only: bool = False
+            new_words_only: bool = False,
+            adaptive_sampling: bool = True,
+            spread_power: float = 1.0,
+            seed: float = 0.01
         ) -> pd.DataFrame:
         dict_df = self.dict_df.copy()
 
@@ -195,7 +242,13 @@ class QuizGenerator:
             
         unique_ids = dict_df[id_column].unique()
         num_to_select = min(num_words, len(unique_ids))
-        quiz_id = pd.Series(unique_ids).sample(n=num_to_select, replace=False)
+
+        if adaptive_sampling and all(c in dict_df.columns for c in
+                ['Num Pinyin Wrong', 'Num Meaning Wrong', 'Num Pinyin Correct', 'Num Meaning Correct']):
+            weights = calculate_adaptive_weights(dict_df, seed=seed, spread_power=spread_power)
+            quiz_id = dict_df[id_column].sample(n=num_to_select, replace=False, weights=weights)
+        else:
+            quiz_id = pd.Series(unique_ids).sample(n=num_to_select, replace=False)
 
         quiz_df = dict_df.loc[dict_df[id_column].isin(quiz_id)]
         quiz_answer_key = quiz_df[['Word Id', 'Word', 'Word Category', 'Sentence', 'Sentence Pinyin', 'Pinyin', 'Pinyin Simplified']].sample(frac=1, random_state=1).reset_index(drop=True)
