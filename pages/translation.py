@@ -99,7 +99,7 @@ layout = dbc.Container(
 )
 def run_translation(n_clicks, word_list):
     if n_clicks > 0 and word_list:
-        translator_pipe.translation_module(word_list, temp=0.7, replace_new_words=False)
+        translator_pipe.translation_module(word_list, translation_model="gpt-5-mini", rarity_model="gpt-5-mini", temp=1, replace_new_words=False)
     return translator_pipe.new_words_df.to_dict('records'), [{"name": i, "id": i} for i in translator_pipe.new_words_df.columns]
 
 

@@ -13,6 +13,12 @@ class WordDict(Base):
     type = Column(String, nullable=False)
     word_category = Column(String, nullable=False)
     word_rarity = Column(String, nullable=False)
+    # rarity_score: integer 1-9 encoding both category and confidence.
+    #   Common   : 1 (solidly common) → 3 (borderline common/uncommon)
+    #   Uncommon : 4 (borderline uncommon/common) → 6 (borderline uncommon/rare)
+    #   Rare     : 7 (borderline rare/uncommon) → 9 (archetypal rare, poetic/literary only)
+    # Derivable from score alone: 1-3=Common, 4-6=Uncommon, 7-9=Rare.
+    rarity_score = Column(Integer, nullable=True)
     meaning = Column(String, nullable=False)
     sentence = Column(String, nullable=False)
     sentence_pinyin = Column(String, nullable=False)

@@ -208,12 +208,25 @@ def get_prompt_for_multiclass_rarity_classification(chinese_words, debug=False):
     The columns in the table should be as follows:
     1) Word:  农场 (If the word provided is in traditional Chinese, then replace it with the simplified version.  Do not put both words in parentheses. Do not add anything else in the Word column except for the simplified version of the word.)
     2) Word Rarity:  Common (This should be adjusted based on the rarity of the word with the three options Common, Uncommon, or Rare)
-    Do not change the column names or the order of the columns.  Only include the columns above in the table.
-    Idioms are automatically rare. 
-    
-    Example Words Common: 太太, 主意, 酒店, 超市, 带, 多久，澳大利亚， 树叶， 西红柿， 蒜
-    Example Words Uncommon: 菊花， 桂花，奥运会，埃塞俄比亚， 机器学习，人工智能, 苤藍, 松子
-    Example Words Rare: 奢求, 空虚, 时光, 仰望, 侧脸， 殿下, 不必多言， 告辞
+    3) Rarity Score:  2 (An integer from 1 to 9 encoding both rarity category and certainty.
+       Common range 1-3:   1=solidly common, 2=common, 3=common but borderline with Uncommon.
+       Uncommon range 4-6: 4=borderline with Common, 5=solidly uncommon, 6=borderline with Rare.
+       Rare range 7-9:     7=borderline with Uncommon, 8=solidly rare, 9=archetypal rare used only in poetry/literature.
+       The score MUST be consistent with the Word Rarity label: Common→1-3, Uncommon→4-6, Rare→7-9.)
+    Here are some rules of thumb for the rarity classification:
+    1: Everyday conversation (e.g., 家, 水, 吃, 穿, 学习, 工作, 商店, 朋友, 今天, 喜欢, 买, 去, 来, 看, 说)
+    2: Everyday but less common such as 吸尘， 拖把， 牙刷， 牙膏, 词典, 电脑 (e.g., 吸尘器, 拖把, 牙刷, 牙膏, 遥控器, 洗衣机, 冰箱, 吹风机, 锅, 枕头)
+    3: Commonly used but context specific such as a very well-known city or country name, or a specific type of produce that is commonly used in cooking such as 美国，英国，西红柿，土豆，苹果 (e.g., 加拿大, 北京, 上海, 日本, 韩国, 香蕉, 葡萄, 黄瓜, 鸡蛋, 牛奶)
+    4: Words that maybe used in conversation but context specific say in business or more formal communications such as (e.g., 合同, 预算, 项目, 客户, 利润, 收入, 投资, 股权, 期权, 报告, 会议, 战略)
+    5: Uncommon words that are still used in conversation but are more niche and may not be known by the average person. This could include more uncommon categories of produce/animals/plants, or words that are used in specific industries or hobbies. (e.g., 罗勒, 藜麦, 蜥蜴, 鲨鱼, 围棋, 潜水, 摄影棚, 滑雪板, 香菜籽, 蓝莓酱)
+    6: Words that can be spoken but are usually field specific such as 机器学习 or extremely rare produce like 苤 (e.g., 机器学习, 因果推断, 回归模型, 神经网络, 量子力学, 分子结构, 心电图, 会计准则, 法律条款, 苤蓝)
+    7: Words that are typically only used in a poetic/literary sense but may still be recognized by the average person. These words may be used in songs, poem, or literature but are not commonly used in conversation. For example, 空虚，时光，仰望，侧脸 (e.g., 流年, 故乡, 柔情, 星辰, 梦境, 远方, 离别, 沉默, 余晖, 风华)
+    8: Words that are used in formal communications only and would be rarely if ever be used in conversations, including idioms. (e.g., 鉴于, 特此通知, 兹证明, 上述, 履行, 务必, 予以批准, 恳请, 此致敬礼, 敬请查收)
+    9: Completely historically used word such as 奴婢，告辞 (e.g., 奴婢, 告辞, 阁下, 鄙人, 本王, 贫道, 末将, 卑职, 奴才, 圣旨)
+        
+    Example Words Common: 太太(1), 主意(2), 酒店(1), 超市(1), 带(2), 多久(2), 澳大利亚(3), 树叶(2), 西红柿(1), 蒜(2)
+    Example Words Uncommon: 菊花(5), 桂花(5), 奥运会(4), 埃塞俄比亚(4), 机器学习(5), 人工智能(5), 苤藍(6), 松子(6)
+    Example Words Rare: 奢求(8), 空虚(7), 时光(7), 仰望(8), 侧脸(8), 殿下(8), 不必多言(9), 告辞(9)
 
     Input Chinese Word = {chinese_words}
     Do not include any word that is not in the list {chinese_words} in the Word column of the ouput table
@@ -226,10 +239,10 @@ def get_prompt_for_multiclass_rarity_classification(chinese_words, debug=False):
         chinese_prompt = f"""
             {chinese_prompt}
 
-            In addition to the first two columns, also include the following columns in the table.
-            3) Pinyin:  nóng chǎng  (This is a column of proper pinyin.  All the tones should be shown explicitly, no number representation for tone allowed in this column)
-            4) Meaning:  Farm (This is could be a longer description of the meaning of the word if no exact translation exists in English.  If this is a common word in English, then only one word translation is sufficient)
-            5) Justification:  Provide a brief explanation of why the word is classified as common, uncommon, or rare.  This should be a brief explanation of why the word is classified as such.  
+            In addition to the first three columns, also include the following columns in the table.
+            4) Pinyin:  nóng chǎng  (This is a column of proper pinyin.  All the tones should be shown explicitly, no number representation for tone allowed in this column)
+            5) Meaning:  Farm (This is could be a longer description of the meaning of the word if no exact translation exists in English.  If this is a common word in English, then only one word translation is sufficient)
+            6) Justification:  Provide a brief explanation of why the word is classified as common, uncommon, or rare.  This should be a brief explanation of why the word is classified as such.  
             """
         
     return chinese_prompt
@@ -320,7 +333,8 @@ class TranslationPipeline:
         self.worksheet_name = worksheet_name
         self.new_words_df = pd.DataFrame()
     
-    def translation_module(self, word_list, translation_model="gpt-4o", rarity_model="gpt-4o-mini", temp=0.7, replace_new_words=True):
+    def translation_module(self, word_list, translation_model="gpt-5-mini", rarity_model="gpt-5-mini", temp=1, replace_new_words=True):
+        print(translation_model, rarity_model)
         ## Generate words translation
         translation_response = (
             get_completion(
@@ -339,10 +353,11 @@ class TranslationPipeline:
             get_completion(
                 prompt=get_prompt_for_multiclass_rarity_classification(word_list), model=rarity_model, temperature=temp))
         word_rarity_df = parse_response_table(rarity_response.choices[0].message.content)
-        #print(word_rarity_df)
+        print(word_rarity_df.head())
 
         max_retries = 3
         for retry in range(max_retries):
+            print(f"Checking rarity classification for {word_list}. Attempt {retry + 1}/{max_retries}")
             if 'Word Rarity' in word_rarity_df:
                 if word_rarity_df['Word Rarity'].notna().min() > 0: 
                     break
@@ -390,7 +405,7 @@ class TranslationPipeline:
         
         return message
     
-    def run_translation_pipeline(self, word_list, translation_model="gpt-4.1-mini", rarity_model="gpt-4.1-mini", temp=0.7, gsheet_mode=False):
+    def run_translation_pipeline(self, word_list, translation_model="gpt-5-mini", rarity_model="gpt-5-mini", temp=1, gsheet_mode=False):
         self.translation_module(word_list, translation_model=translation_model, rarity_model=rarity_model, temp=temp)   
         message = self.update_module(gsheet_mode=gsheet_mode)
         return message
