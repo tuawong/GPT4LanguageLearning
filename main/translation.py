@@ -323,22 +323,34 @@ class TranslationPipeline:
     '''
     Translation pipeline to generate translations for Chinese words and update the dictionary with the new words.
     '''
-    def __init__(self, 
-                 gsheet_mode=False,
-                 gsheet_name=None, 
-                 worksheet_name=None
-                 ):
+    def __init__(
+        self, 
+        gsheet_mode=False,
+        gsheet_name=None, 
+        worksheet_name=None
+        ):
         self.gsheet_mode = gsheet_mode
         self.gsheet_name = gsheet_name
         self.worksheet_name = worksheet_name
         self.new_words_df = pd.DataFrame()
     
-    def translation_module(self, word_list, translation_model="gpt-5-mini", rarity_model="gpt-5-mini", temp=1, replace_new_words=True):
+    def translation_module(
+        self, 
+        word_list, 
+        translation_model="gpt-5-mini", 
+        rarity_model="gpt-5-mini", 
+        temp=1, 
+        replace_new_words=True
+        ):
+        
         print(translation_model, rarity_model)
         ## Generate words translation
         translation_response = (
             get_completion(
-                prompt=get_prompt_for_chinese_translation(word_list), model=translation_model , temperature=temp))
+                prompt=get_prompt_for_chinese_translation(word_list), 
+                model=translation_model , 
+                temperature=temp
+                ))
 
         newwords_df = (
             parse_response_table(
@@ -351,9 +363,12 @@ class TranslationPipeline:
         ## Generate words rarity classification
         rarity_response = (
             get_completion(
-                prompt=get_prompt_for_multiclass_rarity_classification(word_list), model=rarity_model, temperature=temp))
+                prompt=get_prompt_for_multiclass_rarity_classification(word_list), 
+                model=rarity_model, 
+                temperature=temp
+                )
+            )
         word_rarity_df = parse_response_table(rarity_response.choices[0].message.content)
-        print(word_rarity_df.head())
 
         max_retries = 3
         for retry in range(max_retries):

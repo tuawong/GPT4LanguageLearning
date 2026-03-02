@@ -13,22 +13,8 @@ from datetime import datetime
 
 from main.sql import sql_update_quizlog, load_dict
 from main.gsheets import load_gsheet_dict, save_df_to_gsheet
-from main.translation import save_new_words_to_dict
+from main.utils import get_completion
 from database import engine
-
-client = OpenAI(
-    api_key = Constants.API_KEY_OPENAI,
-)
-
-def get_completion(prompt, model="gpt-4.1-mini", temperature=0):
-    messages = [{"role": "user", "content": prompt}]
-    response = client.chat.completions.create(
-        model=model,
-        messages=messages,
-        temperature=temperature,
-    )
-    return response
-
 
 def calculate_adaptive_weights(
     df: pd.DataFrame,
@@ -296,7 +282,7 @@ class QuizGenerator:
             meaning = meaning_answer
             )
 
-        sample_response_translation = get_completion(prompt=quiz_prompt, temperature=0.7)
+        sample_response_translation = get_completion(prompt=quiz_prompt, temperature=1)
         meaning_eval_df = parse_meaning_table(sample_response_translation.choices[0].message.content)
         meaning_eval_df = meaning_eval_df.reset_index(drop=True)
         #meaning_eval_df.columns = [col.lower().replace(' ', '_') for col in meaning_eval_df.columns]
