@@ -213,7 +213,11 @@ def sql_update_quizlog(df: pd.DataFrame):
 
     # Generate word_id
     df_id = pd.read_sql("SELECT MAX(quiz_id) FROM QuizLog", engine)
-    max_phrase_id = pd.to_numeric(df_id.values[0][0].replace("QW", ""))
+    max_quiz_id_val = df_id.values[0][0]
+    if max_quiz_id_val is None:
+        max_phrase_id = 0
+    else:
+        max_phrase_id = pd.to_numeric(max_quiz_id_val.replace("QW", ""))
     new_phrase_ids = ['QW'+str(num + max_phrase_id).zfill(6) for num in range(1, df.shape[0] + 1)]
     df['quiz_id'] = new_phrase_ids
     
@@ -224,6 +228,11 @@ def sql_update_quizlog(df: pd.DataFrame):
     for col in required:
         if col not in df.columns:
             df[col] = None
+
+    # Fill optional string correction columns with empty string to satisfy NOT NULL constraints
+    for col in ['pinyin_answer', 'pinyin_correction', 'meaning', 'meaning_correction']:
+        if col in df.columns:
+            df[col] = df[col].fillna('')
 
     # SQLite wants None, not NaN
     df = df.where(pd.notnull(df), None)

@@ -251,7 +251,7 @@ def handle_quiz_buttons(n_quiz_clicks, n_score_clicks, num_words, date_filter, c
         # Handle Scoring the Quiz
         if quiz_table_data:  # Ensure there is data to score
             quiz_df = pd.DataFrame(quiz_table_data)  # Convert current table data to DataFrame
-            print(quiz_df.head())
+
             quiz_result = quiz_generator.evaluate_pinyin_and_meaning_quiz(
                 pinyin_answer=quiz_df['Pinyin'],
                 meaning_answer=quiz_df['Meaning'],
@@ -262,8 +262,10 @@ def handle_quiz_buttons(n_quiz_clicks, n_score_clicks, num_words, date_filter, c
             display_columns = [{"name": i, "id": i} for i in quiz_result.columns]
             message = "Quiz Scored!"
 
+            print("Updating quiz log with results")
             quiz_generator.output_quiz_log(gsheet_mode=False)
-
+            print("Quiz log updated")
+            
             # Reload dataset so "New Words Only" filter reflects updated quiz status
             updated_df = load_dict()
             quiz_generator.df = updated_df

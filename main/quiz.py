@@ -303,7 +303,6 @@ class QuizGenerator:
         meaning_eval_df = self.check_meaning(
             meaning_answer = meaning_answer
             )
-        print(meaning_eval_df.head())
         
         outdf = pd.concat([
             self.answer_key[['Word Id']],
@@ -316,53 +315,6 @@ class QuizGenerator:
         outdf['Adaptive Sample Scale'] = getattr(self, 'spread_power', 1.0)
         self.quiz_result = outdf
         return outdf
-
-    def update_quiz_score(
-            self,
-            gsheet_name: str,
-            wks_name: str
-        ) -> None:
-        '''
-        This function updates the quiz score for the word dictionary.
-        '''
-        if not hasattr(self, 'quiz_result'):
-            raise Exception("Quiz Result not available.  Please run evaluate the quiz first.")
-        
-        quiz_result_df = self.quiz_result
-        word_dict = load_dict(gsheet_mode=True, gsheet_name=gsheet_name, worksheet_name=wks_name)
-
-        #quiz_result_df['Right Score'] = np.where((quiz_result_df['Meaning Correct']=="yes")&(quiz_result_df['Pinyin Correct']=="yes"), 1, 0)
-        #quiz_result_df['Wrong Score'] = np.where(quiz_result_df['Right Score']==0, 1, 0)
-        quiz_result_df['Pinyin Right Score'] = np.where((quiz_result_df['Pinyin Correct']=="yes"), 1, 0)
-        quiz_result_df['Pinyin Wrong Score'] = np.where(quiz_result_df['Pinyin Right Score']==0, 1, 0)
-        quiz_result_df['Meaning Right Score'] = np.where((quiz_result_df['Meaning Correct']=="yes"), 1, 0)
-        quiz_result_df['Meaning Wrong Score'] = np.where(quiz_result_df['Meaning Right Score']==0, 1, 0)
-        quiz_result_df['Last Quiz'] = datetime.now().strftime('%Y-%m-%d')
-
-        word_dict_quiz_export = word_dict.merge(quiz_result_df[['Right Score', 'Wrong Score', 'Last Quiz']].reset_index(), on='Word Id', how='left')
-
-        num_attempts = word_dict_quiz_export['Num_Quiz_Attempt'].fillna(0).astype(int).sum()
-        word_dict_quiz_export['Num_Quiz_Attempt'] = word_dict_quiz_export['Num_Quiz_Attempt'].astype(int) + word_dict_quiz_export['Right Score'].notna()
-        word_dict_quiz_export['Num_Correct'] = word_dict_quiz_export['Num_Correct'].astype(int) + word_dict_quiz_export['Right Score'].fillna(0)
-        word_dict_quiz_export['Num_Wrong'] = word_dict_quiz_export['Num_Wrong'].astype(int) + word_dict_quiz_export['Wrong Score'].fillna(0)
-        word_dict_quiz_export['Last_Quiz'] = word_dict_quiz_export['Last_Quiz'].fillna('2001-01-01')
-        word_dict_quiz_export['Last_Quiz'] = np.where(word_dict_quiz_export['Last_Quiz'] < word_dict_quiz_export['Last Quiz'], word_dict_quiz_export['Last Quiz'], word_dict_quiz_export['Last_Quiz'])
-
-        num_attempts_post_update = word_dict_quiz_export['Num_Quiz_Attempt'].fillna(0).astype(int).sum()
-        num_correct_post_update = word_dict_quiz_export['Num_Correct'].fillna(0).astype(int).sum()
-        num_wrong_post_update = word_dict_quiz_export['Num_Wrong'].fillna(0).astype(int).sum()
-
-        attempt_count_condition = (num_attempts + len(quiz_result_df) != num_attempts_post_update)
-        correct_wrong_total_condition = (num_correct_post_update + num_wrong_post_update != num_attempts_post_update)
-
-        if (attempt_count_condition) or (correct_wrong_total_condition):
-            raise Exception("Error in updating the quiz results.  Please check the code.")
-
-        word_dict_quiz_export = word_dict_quiz_export.drop(columns=['Right Score', 'Wrong Score', 'Last Quiz'])
-
-        save_df_to_gsheet(overwrite_mode=True, df_to_save=word_dict_quiz_export, gsheet_name=gsheet_name, wks_name=wks_name)
-
-        return "Quiz Result Updated"
     
     def output_quiz_log(
             self, 
@@ -370,11 +322,12 @@ class QuizGenerator:
             wks_name: str = None,
             gsheet_mode: bool = False,
         ) -> None:
+
         if not hasattr(self, 'quiz_result'):
             raise Exception("Quiz Result not available.  Please run evaluate the quiz first.")
         
         if gsheet_mode:
-            quiz_log = load_dict(gsheet_mode=True, gsheet_name=gsheet_name, worksheet_name=wks_name)
+            quiz_log = load_dict()
             quiz_export = self.quiz_result.drop(['Sentence', 'Sentence Pinyin'], axis=1).copy()
 
             max_id = pd.to_numeric(quiz_log['Quiz Id'].apply(lambda x: x.replace('QW','')), errors='coerce').max()
@@ -383,5 +336,10 @@ class QuizGenerator:
             quiz_log = pd.concat([quiz_log, quiz_export], axis=0).reset_index(drop=True)
             save_df_to_gsheet(overwrite_mode=True, df_to_save=quiz_log, gsheet_name=gsheet_name, wks_name=wks_name)
         else:
-            sql_update_quizlog(self.quiz_result)
+
+
+            result = sql_update_quizlog(self.quiz_result)
+
+            if result != "Saved quiz result.":
+                raise RuntimeError(f"Failed to save quiz log: {result}")
         return "Quiz Log Updated"
