@@ -173,7 +173,7 @@ class ResponseQuizGenerator:
                     temperature=temp
                     )
                 )
-            content = sample_response_translation.choices[0].message.content
+            content = sample_response_translation.output_text
             phrase_df = parse_response_table(content)
             self.phrase_df = phrase_df
 
@@ -212,7 +212,7 @@ class ResponseQuizGenerator:
                 )
         else:
             raise Exception("Mode not recognized.  Please use either 'conversation' or 'translation'")
-        content = sample_response_translation.choices[0].message.content
+        content = sample_response_translation.output_text
         eval_df = parse_response_table(content)
         self.eval_df = eval_df
         return eval_df

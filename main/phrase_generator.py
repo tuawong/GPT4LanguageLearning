@@ -254,7 +254,7 @@ class PhraseGenerationPipeline:
             temperature=temp)
         self.phrase_gen_response = phrase_gen_response
 
-        new_phrase_df = parse_response_table(phrase_gen_response.choices[0].message.content, date_col=['Added Date'])
+        new_phrase_df = parse_response_table(phrase_gen_response.output_text, date_col=['Added Date'])
         self.new_phrase_df = new_phrase_df
 
     def phrase_response_module(
@@ -271,7 +271,7 @@ class PhraseGenerationPipeline:
             temperature=temp)
         self.phrase_gen_response = phrase_gen_response
 
-        new_phrase_df = parse_response_table(phrase_gen_response.choices[0].message.content, date_col=['Added Date'])
+        new_phrase_df = parse_response_table(phrase_gen_response.output_text, date_col=['Added Date'])
         self.new_phrase_df = new_phrase_df
 
     def phrase_translate_module(
@@ -288,7 +288,7 @@ class PhraseGenerationPipeline:
             temperature=temp)
         self.phrase_gen_response = phrase_gen_response
 
-        new_phrase_df = parse_response_table(phrase_gen_response.choices[0].message.content, date_col=['Added Date'])
+        new_phrase_df = parse_response_table(phrase_gen_response.output_text, date_col=['Added Date'])
         self.new_phrase_df = new_phrase_df
 
     def clear_new_phrases(self):

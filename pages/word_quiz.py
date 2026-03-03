@@ -251,6 +251,7 @@ def handle_quiz_buttons(n_quiz_clicks, n_score_clicks, num_words, date_filter, c
         # Handle Scoring the Quiz
         if quiz_table_data:  # Ensure there is data to score
             quiz_df = pd.DataFrame(quiz_table_data)  # Convert current table data to DataFrame
+            print(quiz_df.head())
             quiz_result = quiz_generator.evaluate_pinyin_and_meaning_quiz(
                 pinyin_answer=quiz_df['Pinyin'],
                 meaning_answer=quiz_df['Meaning'],

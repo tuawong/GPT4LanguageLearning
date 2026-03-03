@@ -15,18 +15,19 @@ client = OpenAI(
     api_key = Constants.API_KEY_OPENAI,
 )
 
-def get_completion(prompt, model="gpt-5-mini", temperature=None):
-    messages = [{"role": "user", "content": prompt}]
-    
+def get_completion(prompt, model="gpt-5-mini", temperature=1):
     if "gpt-5" in model:
         reasoning={"effort": "low"}
+        temperature = None
     else:
         reasoning=None
-        
-    response = client.chat.completions.create(
+    
+    print(f"Model: {model}, Temperature: {temperature}, Reasoning: {reasoning}")
+    response = client.responses.create(
         model=model,
-        messages=messages,
+        input=prompt,
         temperature=temperature,
+        reasoning=reasoning
     )
     return response
 

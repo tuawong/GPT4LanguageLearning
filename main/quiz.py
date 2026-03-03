@@ -119,6 +119,7 @@ def get_prompt_evaluate_quiz_meaning_only(
     Meaning Correction (Column #4):  If column #3 is "no" provide the correct answer.  If the meaning provided is missing, the correct meaning of the word must be provided. If the correct meaning is provided, then this column must be blank.  The meaning must be in English..
 
     The table columns must be (1) Word List, (2) Meaning, (3) Meaning Correct, (4) Meaning Correction
+    The table is always separated by | and the first row is the column name.  Do not use any other separator such as comma or tab.
     No changes to the column name is allowed.
     No other response should be given except the table
     '''
@@ -283,7 +284,7 @@ class QuizGenerator:
             )
 
         sample_response_translation = get_completion(prompt=quiz_prompt, temperature=1)
-        meaning_eval_df = parse_meaning_table(sample_response_translation.choices[0].message.content)
+        meaning_eval_df = parse_meaning_table(sample_response_translation.output_text)
         meaning_eval_df = meaning_eval_df.reset_index(drop=True)
         #meaning_eval_df.columns = [col.lower().replace(' ', '_') for col in meaning_eval_df.columns]
         
@@ -302,7 +303,8 @@ class QuizGenerator:
         meaning_eval_df = self.check_meaning(
             meaning_answer = meaning_answer
             )
-
+        print(meaning_eval_df.head())
+        
         outdf = pd.concat([
             self.answer_key[['Word Id']],
             self.quiz[['Word', 'Sentence']], 

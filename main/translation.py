@@ -354,7 +354,7 @@ class TranslationPipeline:
 
         newwords_df = (
             parse_response_table(
-                translation_response.choices[0].message.content,
+                translation_response.output_text,
                 ffill_cols = ['Word', 'Pinyin', 'Pinyin Simplified', 'Type'],
                 date_col = ['Added Date']
                 )
@@ -368,7 +368,7 @@ class TranslationPipeline:
                 temperature=temp
                 )
             )
-        word_rarity_df = parse_response_table(rarity_response.choices[0].message.content)
+        word_rarity_df = parse_response_table(rarity_response.output_text)
 
         max_retries = 3
         for retry in range(max_retries):
@@ -382,7 +382,7 @@ class TranslationPipeline:
                     rarity_response = (
                         get_completion(
                             prompt=get_prompt_for_multiclass_rarity_classification(word_list), model=rarity_model, temperature=temp))
-                    word_rarity_df = parse_response_table(rarity_response.choices[0].message.content)
+                    word_rarity_df = parse_response_table(rarity_response.output_text)
 
         newwords_df = pd.merge(newwords_df, word_rarity_df, on='Word', how='left')
 
