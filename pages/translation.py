@@ -39,10 +39,23 @@ layout = dbc.Container(
             # Text input and submit button
             dbc.Row(dbc.Col(
                 html.Div([
-                    html.Label('Please Enter Text for Translation Here', style={'marginRight': '10px', "font-size": "1rem", "color": "#6c757d"}),
-                    dcc.Input(id='word-list', type='text', placeholder='Enter some text', style={'marginRight': '10px'}),
-                    dbc.Button('Submit', id='submit-button', n_clicks=0)
-                ], style={'display': 'flex', 'alignItems': 'center', 'marginBottom': '20px'}),
+                    html.Label('Enter Words for Translation (one per row)',
+                               style={"font-size": "1rem", "color": "#6c757d", "marginBottom": "8px"}),
+                    dash_table.DataTable(
+                        id='word-input-table',
+                        columns=[{'id': 'word', 'name': 'Word', 'editable': True}],
+                        data=[{'word': ''} for _ in range(10)],
+                        editable=True,
+                        row_deletable=True,
+                        style_table={'height': '300px', 'overflowY': 'auto', 'width': '320px'},
+                        style_cell={'textAlign': 'left', 'padding': '8px', 'fontFamily': 'Arial'},
+                        style_header={'fontWeight': 'bold', 'backgroundColor': '#f8f9fa'},
+                    ),
+                    dbc.ButtonGroup([
+                        dbc.Button('+ Add Row', id='add-row-button', n_clicks=0, color='light', size='sm', style={'marginTop': '8px'}),
+                        dbc.Button('Submit', id='submit-button', n_clicks=0, size='sm', style={'marginTop': '8px'}),
+                    ])
+                ], style={'display': 'flex', 'flexDirection': 'column', 'alignItems': 'flex-start', 'marginBottom': '20px'}),
                 className="d-flex justify-content-center"
             )),
             html.Hr(),
@@ -90,16 +103,30 @@ layout = dbc.Container(
         , fluid=True
     )
 
+@callback(
+    Output('word-input-table', 'data'),
+    Input('add-row-button', 'n_clicks'),
+    State('word-input-table', 'data'),
+    prevent_initial_call=True
+)
+def add_row(n_clicks, current_data):
+    current_data.append({'word': ''})
+    return current_data
+
+
 # Callback to update output text on button click
 @callback(
     [Output(component_id='vocab-datatable', component_property='data'),
     Output(component_id='vocab-datatable', component_property='columns')],
-    Input('submit-button', 'n_clicks'),     
-    State('word-list', 'value')           
+    Input('submit-button', 'n_clicks'),
+    State('word-input-table', 'data')
 )
-def run_translation(n_clicks, word_list):
-    if n_clicks > 0 and word_list:
-        translator_pipe.translation_module(word_list, translation_model="gpt-5-mini", rarity_model="gpt-5-mini", temp=1, replace_new_words=False)
+def run_translation(n_clicks, word_table_data):
+    if n_clicks > 0 and word_table_data:
+        words = [row['word'] for row in word_table_data if row.get('word', '').strip()]
+        if words:
+            word_list = ', '.join(words)
+            translator_pipe.translation_module(word_list, translation_model="gpt-5-mini", rarity_model="gpt-5-mini", temp=1, replace_new_words=False)
     return translator_pipe.new_words_df.to_dict('records'), [{"name": i, "id": i} for i in translator_pipe.new_words_df.columns]
 
 

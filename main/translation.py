@@ -95,6 +95,7 @@ def get_prompt_for_chinese_translation(chinese_words, category_examples=get_cate
     5. Meaning:  Farm (This is could be a longer description of the meaning of the word if no exact translation exists in English.  If this is a common word in English, then only one word translation is sufficient)
         For words with nuanced meanings, the meaning column should capture the nuance in the meaning of the word. For words that can have be mapped to single English word, but has nuanced meaning in Chinese, the meaning column should capture the nuance of the word.
         For example 说, 讲, 聊, 谈, 吵, all can be translated to "talk" or "speak" in English, but each word has its own nuance in Chinese.  The meaning column should capture the nuance of each word.
+        The meaning column must be in English, NOT Chinese.
     6. Sentence:  我暑假打算去爷爷的农场帮忙  
     7. Sentence Pinyin:  Wǒ shǔjià dǎsuàn qù yéye de nóngchǎng bāngmáng. 
     8. Sentence Meaning:  I plan to go to my grandfather's farm to help during the summer vacation.
@@ -111,7 +112,7 @@ def get_prompt_for_chinese_translation(chinese_words, category_examples=get_cate
 
     Word: 说 
     Incomplete Literal Translation: To speak --> (Incorrect)
-    Nuanced Translation: To convey information or express thoughts through spoken language, often in a more formal or structured manner. --> (Correct)
+    Nuanced Translation: To speak, often used in a more formal or structured manner. --> (Correct)
     
     Word: 讲
     Incomplete Literal Translation: To speak --> (Incorrect)
@@ -133,17 +134,13 @@ def get_prompt_for_chinese_translation(chinese_words, category_examples=get_cate
     Incomplete Literal Translation: Concern --> (Incorrect)
     Correct Nuanced Translation: Hesitation or reservation caused by fear, worry, or consideration of other people's feelings or social norms. --> (Correct)
 
-    Word: 缘分 (yuánfèn)
-    Incomplete Literal Translation: Fate --> (Incorrect)
-    Correct Nuanced Translation: A destined connection or bond between people. --> (Correct)
-
     Word: 时光 (shíguāng)
     Incomplete Literal Translation: Time --> (Incorrect)
     Correct Nuanced Translation: A period or moment in time; often used poetically to refer to the passage of time. --> (Correct)
 
     Conversely, if a word has a simple translation that is sufficient to capture the meaning, then only provide the simple translation.  
     Do not provide a nuanced translation if the simple translation is sufficient and do not provide explanation for simple concepts if there is no nuance to the word.
-    In this case, do not nuance along the simple translation.  Only provide the simple translation.
+    In this case, do not nuance along the simple translation.  Only provide the simple translation.  Simple things like animal, food, object, body parts should not be elaborated on.
     DO NOT expound on a simple word either for example (Fat: Having a lot of excess flesh --> Incorrect) or for a more nuanced word (Love: An intense feeling of deep affection --> Incorrect).  Only provide the simple translation if the simple translation is sufficient to capture the meaning of the word.  Do not provide an explanation for the word if there is no nuance to the word.
     
     Example words with simple translations:
@@ -153,7 +150,7 @@ def get_prompt_for_chinese_translation(chinese_words, category_examples=get_cate
 
     Word: 陌生人 (mòshēngrén)
     Literal Translation: Stranger --> (Correct)
-    Explained Translation: Stranger, a person whom one does not know --> (Incorrect)
+    Explained Translation: A person whom one does not know --> (Incorrect)
     
     Word: 水 (shuǐ)
     Literal Translation: Water  --> (Correct)

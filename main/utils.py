@@ -17,7 +17,7 @@ client = OpenAI(
 
 def get_completion(prompt, model="gpt-5-mini", temperature=1):
     if "gpt-5" in model:
-        reasoning={"effort": "low"}
+        reasoning={"effort": "medium"}
         temperature = None
     else:
         reasoning=None
