@@ -15,6 +15,12 @@ orig_df = orig_df.sort_index(ascending=False)
 
 # Don't really need to show Pinyin Simplified column
 orig_df = orig_df.drop(columns=['Pinyin Simplified'])
+orig_df['Pinyin Errors'] = orig_df['Quiz Attempts'] - orig_df['Num Pinyin Correct']
+orig_df['Meaning Errors'] = orig_df['Quiz Attempts'] - orig_df['Num Meaning Correct']
+
+# Move Last Quiz to the final column
+cols = [c for c in orig_df.columns if c != 'Last Quiz'] + ['Last Quiz']
+orig_df = orig_df[cols]
 
 word_date = orig_df['Added Date'].drop_duplicates().sort_values().to_list()
 word_cat = orig_df['Word Category'].drop_duplicates().sort_values().to_list()
@@ -113,7 +119,7 @@ layout = dbc.Container([
                     'backgroundColor': '#ffffff',  # White background for data
                     'color': '#212529'  # Dark text color
                 },
-                page_size=25, 
+                page_size=15, 
                 id='dict-display'
             ),
             width=12,
@@ -129,6 +135,11 @@ def reload_table(n_clicks):
     if n_clicks > 0:
         df = load_dict()
         df = df.sort_index(ascending=False)
+        df = df.drop(columns=['Pinyin Simplified'])
+        df['Pinyin Errors'] = df['Quiz Attempts'] - df['Num Pinyin Correct']
+        df['Meaning Errors'] = df['Quiz Attempts'] - df['Num Meaning Correct']
+        cols = [c for c in df.columns if c != 'Last Quiz'] + ['Last Quiz']
+        df = df[cols]
         return df.to_dict('records')
     else:
         return orig_df.to_dict('records')
