@@ -63,6 +63,12 @@ def _blank_cols(col_list):
     return [{'name': c, 'id': c} for c in col_list]
 
 
+# Load saved comparisons at startup so the table is pre-populated on page load
+_saved_df = load_word_comparisons()
+_saved_cols_present = [c for c in SAVED_DISPLAY_COLS if c in _saved_df.columns] if not _saved_df.empty else SAVED_DISPLAY_COLS
+_saved_initial_data = _saved_df[_saved_cols_present].to_dict('records') if not _saved_df.empty else []
+
+
 # ── Layout ──────────────────────────────────────────────────────────────────
 layout = dbc.Container([
 
@@ -170,8 +176,8 @@ layout = dbc.Container([
     dbc.Row(dbc.Col(
         dash_table.DataTable(
             id='wc-saved-table',
-            data=[],
-            columns=_blank_cols(SAVED_DISPLAY_COLS),
+            data=_saved_initial_data,
+            columns=_blank_cols(_saved_cols_present),
             page_size=15,
             **_table_style,
         ),
