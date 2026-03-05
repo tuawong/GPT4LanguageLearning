@@ -2,7 +2,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import select, text
 from sqlalchemy.exc import SQLAlchemyError
 from database import engine
-from models import WordDict, QuizAgg, PhraseDict, QuizLog, ResponseLog, TranslationLog
+from models import WordDict, QuizAgg, PhraseDict, QuizLog, ResponseLog, TranslationLog, WordComparison
 import pandas as pd
 from typing import List
 
@@ -312,3 +312,95 @@ def sql_update_responselog(df: pd.DataFrame, mode="conversation"):
         message = f"Quiz Update transaction failed: {e}"
         return message 
  
+
+def load_word_comparisons() -> pd.DataFrame:
+    """
+    Load all saved word comparison rows from the database.
+    Returns a DataFrame with display-friendly column names.
+    """
+    rename_dict = {
+        'id': 'Id',
+        'word1': 'Word 1',
+        'word1_pinyin': 'Word 1 Pinyin',
+        'word2': 'Word 2',
+        'word2_pinyin': 'Word 2 Pinyin',
+        'meaning': 'Meaning',
+        'part_of_speech_1': 'Part of Speech 1',
+        'part_of_speech_2': 'Part of Speech 2',
+        'word1_nuance': 'Word 1 Nuance',
+        'word2_nuance': 'Word 2 Nuance',
+        'word1_tone': 'Word 1 Tone',
+        'word2_tone': 'Word 2 Tone',
+        'word1_example': 'Word 1 Example',
+        'word1_example_pinyin': 'Word 1 Example Pinyin',
+        'word1_example_meaning': 'Word 1 Example Meaning',
+        'word2_example': 'Word 2 Example',
+        'word2_example_pinyin': 'Word 2 Example Pinyin',
+        'word2_example_meaning': 'Word 2 Example Meaning',
+        'added_date': 'Added Date',
+    }
+    df = pd.read_sql("SELECT * FROM WordComparison ORDER BY id DESC", engine)
+    df = df.rename(columns=rename_dict)
+    return df
+
+
+def sql_insert_word_comparison(df: pd.DataFrame) -> str:
+    """
+    Insert one or more word comparison rows into the WordComparison table.
+
+    Args:
+        df: DataFrame whose columns match the display names returned by
+            load_word_comparisons() (i.e. 'Word 1', 'Word 1 Pinyin', etc.)
+            OR the raw snake_case column names.
+
+    Returns:
+        A status message string.
+    """
+    col_map = {
+        'Word 1': 'word1',
+        'Word 1 Pinyin': 'word1_pinyin',
+        'Word1 Pinyin': 'word1_pinyin',
+        'Word1': 'word1',
+        'Word 2': 'word2',
+        'Word 2 Pinyin': 'word2_pinyin',
+        'Word2 Pinyin': 'word2_pinyin',
+        'Word2': 'word2',
+        'Meaning': 'meaning',
+        'Part of Speech 1': 'part_of_speech_1',
+        'Part of Speech 2': 'part_of_speech_2',
+        'Word 1 Nuance': 'word1_nuance',
+        'Word 2 Nuance': 'word2_nuance',
+        'Word 1 Tone': 'word1_tone',
+        'Word 2 Tone': 'word2_tone',
+        'Word 1 Example': 'word1_example',
+        'Word 1 Example Pinyin': 'word1_example_pinyin',
+        'Word 1 Example Meaning': 'word1_example_meaning',
+        'Word 2 Example': 'word2_example',
+        'Word 2 Example Pinyin': 'word2_example_pinyin',
+        'Word 2 Example Meaning': 'word2_example_meaning',
+    }
+    df = df.copy()
+    df = df.rename(columns=col_map)
+
+    required = [
+        'word1', 'word1_pinyin', 'word2', 'word2_pinyin', 'meaning',
+        'part_of_speech_1', 'part_of_speech_2',
+        'word1_nuance', 'word2_nuance',
+        'word1_tone', 'word2_tone',
+        'word1_example', 'word1_example_pinyin', 'word1_example_meaning',
+        'word2_example', 'word2_example_pinyin', 'word2_example_meaning',
+    ]
+    for col in required:
+        if col not in df.columns:
+            df[col] = None
+
+    df = df.where(pd.notnull(df), None)
+    records = df[required].to_dict(orient='records')
+
+    try:
+        with Session(engine) as session:
+            session.bulk_insert_mappings(WordComparison, records)
+            session.commit()
+        return "Word comparison saved successfully."
+    except SQLAlchemyError as e:
+        return f"Word comparison insert failed: {e}"

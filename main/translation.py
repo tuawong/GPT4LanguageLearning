@@ -14,6 +14,7 @@ from main.gsheets import load_gsheet_dict, save_df_to_gsheet, format_gsheet
 from main.sql import load_dict
 from main.utils import get_completion, parse_response_table
 from main.sql import sql_update_worddict
+from main.sql import sql_insert_word_comparison
 
 # Incorporate data
 df = load_dict()
@@ -29,6 +30,20 @@ df = load_dict()
 
 
 def get_prompt_for_word_comparison(word1, word2):
+    """
+    Generate a prompt asking GPT to compare two Chinese words side by side in a table.
+
+    The returned prompt instructs the model to output a single-row table with columns
+    covering pinyin, shared meaning, part of speech, nuance, tone, and example sentences
+    for each word. No additional text output is allowed.
+
+    Args:
+        word1 (str): The first Chinese word to compare.
+        word2 (str): The second Chinese word to compare.
+
+    Returns:
+        str: A formatted prompt string ready to be sent to the language model.
+    """
     chinese_prompt =  f"""
     For the following word pair, please output the following as a one row in a table.  There should be the following columns in table related to the word.  
     1) Word1: The first word provided.
@@ -49,7 +64,13 @@ def get_prompt_for_word_comparison(word1, word2):
     16) Word 2 Example Pinyin: The pinyin for the example sentence using the second word.
     17) Word 2 Example Meaning: The English translation of the example sentence using the second word.
 
-    No textual output if is allowed.  The table should be the only output.
+    Here is an example of the expected output for the word pair 看 and 瞧:
+    | Word1 | Word1 Pinyin | Word2 | Word2 Pinyin | Meaning | Part of Speech 1 | Part of Speech 2 | Word 1 Nuance | Word 2 Nuance | Word 1 Tone | Word 2 Tone | Word 1 Example | Word 1 Example Pinyin | Word 1 Example Meaning | Word 2 Example | Word 2 Example Pinyin | Word 2 Example Meaning |
+    |-------|-------------|-------|-------------|---------|-----------------|-----------------|--------------|--------------|------------|------------|---------------|----------------------|----------------------|---------------|----------------------|----------------------|
+    | 看 | kàn | 瞧 | qiáo | To look / to see | Verb | Verb | General and widely used; can mean to look, watch, read, or visit | More colloquial; implies a quick or attentive glance, often with a sense of curiosity | Neutral | Casual / Colloquial | 我在看书。 | Wǒ zài kàn shū. | I am reading a book. | 你瞧，他来了！ | Nǐ qiáo, tā lái le! | Look, he's here! |
+
+    The word pair to compare is: {word1} and {word2}.
+    No textual output is allowed.  The table should be the only output.
     """
 
     return chinese_prompt
@@ -421,3 +442,44 @@ class TranslationPipeline:
         self.translation_module(word_list, translation_model=translation_model, rarity_model=rarity_model, temp=temp)   
         message = self.update_module(gsheet_mode=gsheet_mode)
         return message
+
+
+class WordComparisonPipeline:
+    """
+    Pipeline to compare two Chinese words via LLM and persist the result to the
+    WordComparison table.
+    """
+
+    def __init__(self):
+        self.result_df = pd.DataFrame()
+
+    def run(self, word1: str, word2: str, model: str = "gpt-5-mini", temperature: float = 1) -> pd.DataFrame:
+        """
+        Call the LLM with the word-comparison prompt, parse the markdown table,
+        and return the result as a DataFrame. Does NOT save to the DB automatically —
+        call save() explicitly to persist the result.
+
+        Args:
+            word1: First Chinese word.
+            word2: Second Chinese word.
+            model: OpenAI model name.
+            temperature: Sampling temperature.
+
+        Returns:
+            Single-row DataFrame with the comparison result.
+        """
+        prompt = get_prompt_for_word_comparison(word1, word2)
+        response = get_completion(prompt, model=model, temperature=temperature)
+        result_df = parse_response_table(response.output_text)
+        self.result_df = result_df
+        return result_df
+
+    def save(self) -> str:
+        """Save the most recently generated comparison result to the DB."""
+        if self.result_df.empty:
+            return "No comparison result to save. Run compare first."
+        message = sql_insert_word_comparison(self.result_df)
+        return message
+
+    def clear(self):
+        self.result_df = pd.DataFrame()
