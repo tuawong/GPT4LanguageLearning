@@ -30,7 +30,7 @@ features = [
     {
         "title": "词组测验 Phrase Quiz",
         "description": "Challenge yourself with phrase-based quizzes to reinforce learning.",
-        "icon": "fa-clipboard-question",
+        "icon": "fa-clipboard-list",
         "href": "/phrasequiz",
         "color": "warning"
     },
@@ -54,6 +54,13 @@ features = [
         "icon": "fa-chart-line",
         "href": "/stats",
         "color": "dark"
+    },
+    {
+        "title": "词语对比 Word Comparison",
+        "description": "Compare similar Chinese words side by side — nuance, tone, usage, and example sentences.",
+        "icon": "fa-scale-balanced",
+        "href": "/word-comparison",
+        "color": "primary"
     },
 ]
 
