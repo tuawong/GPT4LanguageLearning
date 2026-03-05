@@ -210,6 +210,7 @@ class QuizGenerator:
             spread_power: float = 1.0,
             seed: float = 0.01
         ) -> pd.DataFrame:
+        self.new_words_only = new_words_only
         self.spread_power = spread_power if adaptive_sampling else 1.0
         dict_df = self.dict_df.copy()
 
@@ -312,7 +313,11 @@ class QuizGenerator:
             ], axis=1)
 
         outdf['last_quiz'] = datetime.now().strftime('%Y-%m-%d')
-        outdf['Adaptive Sample Scale'] = getattr(self, 'spread_power', 1.0)
+        # Log null for adaptive sample scale when new words only mode is used
+        if getattr(self, 'new_words_only', False):
+            outdf['Adaptive Sample Scale'] = None
+        else:
+            outdf['Adaptive Sample Scale'] = getattr(self, 'spread_power', 1.0)
         self.quiz_result = outdf
         return outdf
     
