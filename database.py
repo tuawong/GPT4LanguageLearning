@@ -2,6 +2,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy import create_engine, event, inspect, text
 from models import WordDict, QuizAgg, PhraseDict, QuizLog, Base, WordComparison
+import hashlib
 import pandas as pd
 import uuid
 from datetime import datetime
@@ -25,6 +26,31 @@ SessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False)
 def init_db() -> None:
     """Create any missing tables. Safe to call multiple times."""
     Base.metadata.create_all(bind=engine)
+    backfill_pair_ids()
+
+
+def backfill_pair_ids() -> None:
+    """
+    Ensure the pair_id column exists in WordComparison and populate any NULL values.
+    Safe to call on every startup — is a no-op once all rows are backfilled.
+    """
+    with engine.begin() as conn:
+        # Add column if it doesn't exist yet (SQLite supports ADD COLUMN)
+        existing = [row[1] for row in conn.execute(text("PRAGMA table_info(WordComparison)"))]
+        if 'pair_id' not in existing:
+            conn.execute(text("ALTER TABLE WordComparison ADD COLUMN pair_id TEXT"))
+
+        # Backfill rows that still have NULL pair_id
+        rows = conn.execute(
+            text("SELECT id, word1, word2 FROM WordComparison WHERE pair_id IS NULL")
+        ).fetchall()
+        for row_id, word1, word2 in rows:
+            raw = f"{(word1 or '').strip()}|{(word2 or '').strip()}"
+            pair_id = "WP" + hashlib.sha256(raw.encode()).hexdigest()[:12]
+            conn.execute(
+                text("UPDATE WordComparison SET pair_id = :pid WHERE id = :id"),
+                {"pid": pair_id, "id": row_id},
+            )
 
 def ensure_views_from_files(dir_rel: str = "sql/views") -> None:
     """

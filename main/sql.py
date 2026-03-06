@@ -1,3 +1,5 @@
+import hashlib
+
 from sqlalchemy.orm import Session
 from sqlalchemy import select, text
 from sqlalchemy.exc import SQLAlchemyError
@@ -5,6 +7,12 @@ from database import engine
 from models import WordDict, QuizAgg, PhraseDict, QuizLog, ResponseLog, TranslationLog, WordComparison
 import pandas as pd
 from typing import List
+
+
+def _compute_pair_id(word1: str, word2: str) -> str:
+    """Return a stable 14-char identifier for a (word1, word2) pair."""
+    raw = f"{(word1 or '').strip()}|{(word2 or '').strip()}"
+    return "WP" + hashlib.sha256(raw.encode()).hexdigest()[:12]
 
 def load_dict():
     """
@@ -320,6 +328,7 @@ def load_word_comparisons() -> pd.DataFrame:
     """
     rename_dict = {
         'id': 'Id',
+        'pair_id': 'Pair ID',
         'word1': 'Word 1',
         'word1_pinyin': 'Word 1 Pinyin',
         'word2': 'Word 2',
@@ -383,7 +392,7 @@ def sql_insert_word_comparison(df: pd.DataFrame) -> str:
     df = df.rename(columns=col_map)
 
     required = [
-        'word1', 'word1_pinyin', 'word2', 'word2_pinyin', 'meaning',
+        'pair_id', 'word1', 'word1_pinyin', 'word2', 'word2_pinyin', 'meaning',
         'part_of_speech_1', 'part_of_speech_2',
         'word1_nuance', 'word2_nuance',
         'word1_tone', 'word2_tone',
@@ -394,11 +403,23 @@ def sql_insert_word_comparison(df: pd.DataFrame) -> str:
         if col not in df.columns:
             df[col] = None
 
+    # Compute pair_id for every row
+    df['pair_id'] = df.apply(
+        lambda r: _compute_pair_id(r.get('word1') or '', r.get('word2') or ''),
+        axis=1,
+    )
+
     df = df.where(pd.notnull(df), None)
     records = df[required].to_dict(orient='records')
+    pair_ids = [r['pair_id'] for r in records if r.get('pair_id')]
 
     try:
         with Session(engine) as session:
+            # Remove any existing rows for these word pairs before inserting
+            if pair_ids:
+                session.query(WordComparison)\
+                       .filter(WordComparison.pair_id.in_(pair_ids))\
+                       .delete(synchronize_session=False)
             session.bulk_insert_mappings(WordComparison, records)
             session.commit()
         return "Word comparison saved successfully."

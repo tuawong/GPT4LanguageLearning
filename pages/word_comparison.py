@@ -34,7 +34,7 @@ DISPLAY_COLS = [
     'Word 2 Example', 'Word 2 Example Pinyin', 'Word 2 Example Meaning',
 ]
 
-SAVED_DISPLAY_COLS = DISPLAY_COLS + ['Added Date']
+SAVED_DISPLAY_COLS = ['Pair ID'] + DISPLAY_COLS + ['Added Date']
 
 _table_style = dict(
     sort_action='native',

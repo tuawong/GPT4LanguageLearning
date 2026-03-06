@@ -6,6 +6,7 @@ class WordComparison(Base):
     __tablename__ = "WordComparison"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
+    pair_id = Column(String, nullable=True, index=True)
     word1 = Column(String, nullable=False)
     word1_pinyin = Column(String, nullable=True)
     word2 = Column(String, nullable=False)
