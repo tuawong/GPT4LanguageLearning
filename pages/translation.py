@@ -70,22 +70,27 @@ layout = dbc.Container(
             # Data table with additional margin and styling
             dbc.Row(
                 dbc.Col(
-                    dash_table.DataTable(
-                        #columns=(
-                        #    [{'id': p, 'name': p} for p in df.columns]
-                        #),
-                        data=df.to_dict('records'), 
-                        page_size=50, 
-                        sort_action="native",
-                        editable=True,
-                        row_deletable=True,
-                        id='vocab-datatable',
-                        style_cell={
-                            "textAlign": "center",  # Align text to the center
-                            "padding": "10px",      # Add padding to cells
-                            "fontFamily": "Arial",  # Set font
-                        },
-                ),
+                    dcc.Loading(
+                        type='default',
+                        children=[
+                            dash_table.DataTable(
+                                #columns=(
+                                #    [{'id': p, 'name': p} for p in df.columns]
+                                #),
+                                data=df.to_dict('records'), 
+                                page_size=50, 
+                                sort_action="native",
+                                editable=True,
+                                row_deletable=True,
+                                id='vocab-datatable',
+                                style_cell={
+                                    "textAlign": "center",  # Align text to the center
+                                    "padding": "10px",      # Add padding to cells
+                                    "fontFamily": "Arial",  # Set font
+                                },
+                            ),
+                        ]
+                    ),
                 width=12,
                 className="shadow-lg p-3 mb-5 bg-white rounded"
             )),
