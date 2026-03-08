@@ -173,10 +173,26 @@ layout = dbc.Container([
         )
     ]),
 
+    # Filter input
+    dbc.Row([
+        dbc.Col([
+            dbc.Input(
+                id='wc-filter-input',
+                type='text',
+                placeholder='Filter by Word 1 or Word 2…',
+                debounce=False,
+                style={'maxWidth': '320px', 'marginBottom': '12px'},
+            )
+        ], width=12)
+    ]),
+
+    # Store holding all saved comparisons (unfiltered)
+    dcc.Store(id='wc-saved-store', data=_saved_initial_data),
+
     dbc.Row(dbc.Col(
         dash_table.DataTable(
             id='wc-saved-table',
-            data=_saved_initial_data,
+            data=[],
             columns=_blank_cols(_saved_cols_present),
             page_size=15,
             **_table_style,
@@ -231,8 +247,7 @@ def run_comparison(n_clicks, word1, word2):
 
 
 @callback(
-    Output('wc-saved-table', 'data'),
-    Output('wc-saved-table', 'columns'),
+    Output('wc-saved-store', 'data'),
     Output('wc-save-status', 'children'),
     Input('wc-save-button', 'n_clicks'),
     Input('wc-reload-button', 'n_clicks'),
@@ -245,7 +260,7 @@ def save_or_reload(save_clicks, reload_clicks, stored_json):
 
     if triggered == 'wc-save-button':
         if not stored_json:
-            return [], _blank_cols(SAVED_DISPLAY_COLS), "Nothing to save — run a comparison first."
+            return [], "Nothing to save — run a comparison first."
 
         result_df = pd.read_json(stored_json, orient='records')
         result_df = result_df.rename(columns=COL_RENAME)
@@ -254,17 +269,39 @@ def save_or_reload(save_clicks, reload_clicks, stored_json):
         cols_present = [c for c in SAVED_DISPLAY_COLS if c in saved_df.columns]
         return (
             saved_df[cols_present].to_dict('records') if not saved_df.empty else [],
-            _blank_cols(cols_present),
             message,
         )
 
     # Reload button
     saved_df = load_word_comparisons()
     if saved_df.empty:
-        return [], _blank_cols(SAVED_DISPLAY_COLS), "No comparisons saved yet."
+        return [], "No comparisons saved yet."
     cols_present = [c for c in SAVED_DISPLAY_COLS if c in saved_df.columns]
     return (
         saved_df[cols_present].to_dict('records'),
-        _blank_cols(cols_present),
         f"Loaded {len(saved_df)} saved comparisons.",
     )
+
+
+@callback(
+    Output('wc-saved-table', 'data'),
+    Output('wc-saved-table', 'columns'),
+    Input('wc-saved-store', 'data'),
+    Input('wc-filter-input', 'value'),
+)
+def filter_saved_table(store_data, filter_text):
+    """Apply word filter to the saved comparisons table."""
+    if not store_data:
+        return [], _blank_cols(SAVED_DISPLAY_COLS)
+
+    df = pd.DataFrame(store_data)
+    if filter_text and filter_text.strip():
+        term = filter_text.strip()
+        mask = (
+            df['Word 1'].astype(str).str.contains(term, case=False, na=False) |
+            df['Word 2'].astype(str).str.contains(term, case=False, na=False)
+        )
+        df = df[mask]
+
+    cols_present = [c for c in SAVED_DISPLAY_COLS if c in df.columns]
+    return df[cols_present].to_dict('records'), _blank_cols(cols_present)

@@ -29,6 +29,10 @@ def get_completion(prompt, model="gpt-5-mini", temperature=1):
         temperature=temperature,
         reasoning=reasoning
     )
+    usage = response.usage
+    cached = getattr(getattr(usage, 'input_tokens_details', None), 'cached_tokens', 0) or 0
+    print(f"Tokens — input: {usage.input_tokens}, output: {usage.output_tokens}, cached: {cached}")
+    print(f"Usage details: {usage}")
     return response
 
 

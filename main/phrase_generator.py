@@ -239,7 +239,7 @@ class PhraseGenerationPipeline:
             complexity, 
             tone = "Polite",
             existing_phrases=[], 
-            translation_model="gpt-4o",
+            translation_model="gpt-4o-mini",
             temp=0.7
             ):
         phrase_gen_response =  get_completion(
@@ -262,7 +262,7 @@ class PhraseGenerationPipeline:
             input_phrases,
             complexity, 
             tone = "Polite",
-            translation_model="gpt-4o", 
+            translation_model="gpt-4o-mini", 
             temp=0.7
             ):
         phrase_gen_response =  get_completion(
@@ -279,7 +279,7 @@ class PhraseGenerationPipeline:
             input_phrases,
             complexity, 
             tone = "Polite",
-            translation_model="gpt-4o", 
+            translation_model="gpt-4o-mini", 
             temp=0.7
             ):
         phrase_gen_response =  get_completion(
@@ -319,7 +319,7 @@ class PhraseGenerationPipeline:
             complexity, 
             tone = "Polite",
             existing_phrases=[], 
-            translation_model="gpt-4o", 
+            translation_model="gpt-4o-mini", 
             temp=0.7
         ):
         self.phrase_generation_module(
@@ -339,7 +339,7 @@ class PhraseGenerationPipeline:
             input_phrases, 
             complexity, 
             tone = "Polite",
-            translation_model="gpt-4o", 
+            translation_model="gpt-4o-mini", 
             temp=0.7
         ):
         self.phrase_response_module(
@@ -357,7 +357,7 @@ class PhraseGenerationPipeline:
             input_phrases, 
             complexity, 
             tone = "Polite",
-            translation_model="gpt-4o", 
+            translation_model="gpt-4o-mini", 
             temp=0.7
         ):
         self.phrase_translate_module(
