@@ -1,13 +1,13 @@
 # Import packages
 import dash
-from dash import Dash, html, dash_table, dcc, callback, Output, Input
+from dash import Dash, html, dash_table, dcc, callback, Output, Input, State, ctx
 from main.translation import *
 import pandas as pd
 import dash_bootstrap_components as dbc
 
 import main.Constants as Constants
 from database import engine, ensure_views_from_files
-from main.sql import load_dict
+from main.sql import load_dict, sql_delete_word_dict
 
 ensure_views_from_files()
 orig_df = load_dict()
@@ -89,11 +89,16 @@ layout = dbc.Container([
 
         # Button to reload table
         dbc.Row([
-            dbc.Col([dbc.Button('Reload Table', id='reload-button', n_clicks=0, color='primary')])
+            dbc.Col([
+                dbc.Button('Reload Table', id='reload-button', n_clicks=0, color='primary', className='me-2'),
+                dbc.Button('Delete Selected', id='dict-delete-button', n_clicks=0, color='danger'),
+            ], width='auto'),
         ]),
     ], className="mb-5"),  # Space between filters and table
 
     html.Hr(),
+    # Delete status
+    html.Div(id='dict-delete-status', style={'color': '#6c757d', 'marginBottom': '8px'}),
     # Data table with additional margin and styling
     dcc.Store(id="table-data-store"),
     dbc.Row(dbc.Col(
@@ -102,6 +107,8 @@ layout = dbc.Container([
                 sort_action="native",  # Enable sorting
                 #filter_action="native",  # Enable filtering
                 editable=True,  # Enable cell editing
+                row_selectable='multi',
+                selected_rows=[],
                 style_table={
                     'overflowX': 'auto',
                     'width': '100%',  
@@ -119,6 +126,13 @@ layout = dbc.Container([
                     'backgroundColor': '#ffffff',  # White background for data
                     'color': '#212529'  # Dark text color
                 },
+                style_data_conditional=[
+                    {
+                        'if': {'state': 'selected'},
+                        'backgroundColor': '#cfe2ff',
+                        'border': '1px solid #0d6efd',
+                    }
+                ],
                 page_size=15, 
                 id='dict-display'
             ),
@@ -129,10 +143,25 @@ layout = dbc.Container([
 
 @callback(
     Output(component_id='table-data-store', component_property='data'),
-    Input('reload-button', 'n_clicks')
+    Output('dict-display', 'selected_rows'),
+    Output('dict-delete-status', 'children'),
+    Input('reload-button', 'n_clicks'),
+    Input('dict-delete-button', 'n_clicks'),
+    State('dict-display', 'selected_rows'),
+    State('dict-display', 'data'),
 )
-def reload_table(n_clicks):
-    if n_clicks > 0:
+def reload_table(reload_clicks, delete_clicks, selected_rows, table_data):
+    triggered = ctx.triggered_id
+
+    if triggered == 'dict-delete-button':
+        if not selected_rows or not table_data:
+            return dash.no_update, [], "No rows selected for deletion."
+        word_ids = [
+            table_data[i]['Word Id']
+            for i in selected_rows
+            if table_data[i].get('Word Id')
+        ]
+        message = sql_delete_word_dict(word_ids)
         df = load_dict()
         df = df.sort_index(ascending=False)
         df = df.drop(columns=['Pinyin Simplified'])
@@ -140,9 +169,19 @@ def reload_table(n_clicks):
         df['Meaning Errors'] = df['Quiz Attempts'] - df['Num Meaning Correct']
         cols = [c for c in df.columns if c != 'Last Quiz'] + ['Last Quiz']
         df = df[cols]
-        return df.to_dict('records')
+        return df.to_dict('records'), [], message
+
+    if reload_clicks and reload_clicks > 0:
+        df = load_dict()
+        df = df.sort_index(ascending=False)
+        df = df.drop(columns=['Pinyin Simplified'])
+        df['Pinyin Errors'] = df['Quiz Attempts'] - df['Num Pinyin Correct']
+        df['Meaning Errors'] = df['Quiz Attempts'] - df['Num Meaning Correct']
+        cols = [c for c in df.columns if c != 'Last Quiz'] + ['Last Quiz']
+        df = df[cols]
+        return df.to_dict('records'), [], ""
     else:
-        return orig_df.to_dict('records')
+        return orig_df.to_dict('records'), [], ""
 
 # Add controls to build the interaction
 @callback(

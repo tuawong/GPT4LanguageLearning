@@ -5,7 +5,7 @@ import pandas as pd
 import dash_bootstrap_components as dbc
 
 from main.translation import WordComparisonPipeline
-from main.sql import load_word_comparisons, sql_insert_word_comparison
+from main.sql import load_word_comparisons, sql_insert_word_comparison, sql_delete_word_comparisons
 from database import init_db
 
 # Ensure the WordComparison table exists
@@ -195,6 +195,15 @@ layout = dbc.Container([
             data=[],
             columns=_blank_cols(_saved_cols_present),
             page_size=15,
+            row_selectable='multi',
+            selected_rows=[],
+            style_data_conditional=[
+                {
+                    'if': {'state': 'selected'},
+                    'backgroundColor': '#cfe2ff',
+                    'border': '1px solid #0d6efd',
+                }
+            ],
             **_table_style,
         ),
         width=12,
@@ -205,8 +214,12 @@ layout = dbc.Container([
         dbc.Col(
             dbc.Button('Reload Saved', id='wc-reload-button', n_clicks=0, color='secondary'),
             width='auto'
-        )
-    ], className="mb-5"),
+        ),
+        dbc.Col(
+            dbc.Button('Delete Selected', id='wc-delete-button', n_clicks=0, color='danger'),
+            width='auto'
+        ),
+    ], className="mb-5 g-2"),
 
 ], fluid=True)
 
@@ -281,6 +294,32 @@ def save_or_reload(save_clicks, reload_clicks, stored_json):
         saved_df[cols_present].to_dict('records'),
         f"Loaded {len(saved_df)} saved comparisons.",
     )
+
+
+@callback(
+    Output('wc-saved-store', 'data', allow_duplicate=True),
+    Output('wc-save-status', 'children', allow_duplicate=True),
+    Output('wc-saved-table', 'selected_rows'),
+    Input('wc-delete-button', 'n_clicks'),
+    State('wc-saved-table', 'selected_rows'),
+    State('wc-saved-table', 'data'),
+    prevent_initial_call=True,
+)
+def delete_selected(n_clicks, selected_rows, table_data):
+    """Delete checked rows from DB and refresh the store."""
+    if not selected_rows or not table_data:
+        return dash.no_update, "No rows selected for deletion.", []
+
+    pair_ids = [
+        table_data[i]['Pair ID']
+        for i in selected_rows
+        if table_data[i].get('Pair ID')
+    ]
+    message = sql_delete_word_comparisons(pair_ids)
+    saved_df = load_word_comparisons()
+    cols_present = [c for c in SAVED_DISPLAY_COLS if c in saved_df.columns]
+    new_store = saved_df[cols_present].to_dict('records') if not saved_df.empty else []
+    return new_store, message, []
 
 
 @callback(

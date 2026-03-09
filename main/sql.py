@@ -425,3 +425,49 @@ def sql_insert_word_comparison(df: pd.DataFrame) -> str:
         return "Word comparison saved successfully."
     except SQLAlchemyError as e:
         return f"Word comparison insert failed: {e}"
+
+
+def sql_delete_word_comparisons(pair_ids: List[str]) -> str:
+    """
+    Delete word comparison rows by their pair_id values.
+
+    Args:
+        pair_ids: List of pair_id strings to delete.
+
+    Returns:
+        A status message string.
+    """
+    if not pair_ids:
+        return "No rows selected for deletion."
+    try:
+        with Session(engine) as session:
+            deleted = session.query(WordComparison)\
+                             .filter(WordComparison.pair_id.in_(pair_ids))\
+                             .delete(synchronize_session=False)
+            session.commit()
+        return f"Deleted {deleted} comparison(s) successfully."
+    except SQLAlchemyError as e:
+        return f"Delete failed: {e}"
+
+
+def sql_delete_word_dict(word_ids: List[str]) -> str:
+    """
+    Delete WordDict rows by their word_id values.
+
+    Args:
+        word_ids: List of word_id strings to delete.
+
+    Returns:
+        A status message string.
+    """
+    if not word_ids:
+        return "No rows selected for deletion."
+    try:
+        with Session(engine) as session:
+            deleted = session.query(WordDict)\
+                             .filter(WordDict.word_id.in_(word_ids))\
+                             .delete(synchronize_session=False)
+            session.commit()
+        return f"Deleted {deleted} word(s) successfully."
+    except SQLAlchemyError as e:
+        return f"Delete failed: {e}"
