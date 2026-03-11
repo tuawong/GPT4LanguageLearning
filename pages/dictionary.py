@@ -7,7 +7,7 @@ import dash_bootstrap_components as dbc
 
 import main.Constants as Constants
 from database import engine, ensure_views_from_files
-from main.sql import load_dict, sql_delete_word_dict
+from main.sql import load_dict, sql_delete_word_dict, sql_patch_worddict_rows
 
 ensure_views_from_files()
 orig_df = load_dict()
@@ -25,6 +25,11 @@ orig_df = orig_df[cols]
 word_date = orig_df['Added Date'].drop_duplicates().sort_values().to_list()
 word_cat = orig_df['Word Category'].drop_duplicates().sort_values().to_list()
 word_rarity = orig_df['Word Rarity'].drop_duplicates().sort_values().to_list()
+
+_EDITABLE_COLS = {'Pinyin', 'Meaning', 'Word Category', 'Word Rarity', 'Type',
+                  'Sentence', 'Sentence Pinyin', 'Sentence Meaning'}
+dict_columns = [{'name': col, 'id': col, 'editable': col in _EDITABLE_COLS}
+                for col in orig_df.columns]
 
 dash.register_page(__name__, path='/dictionary')
 
@@ -91,7 +96,8 @@ layout = dbc.Container([
         dbc.Row([
             dbc.Col([
                 dbc.Button('Reload Table', id='reload-button', n_clicks=0, color='primary', className='me-2'),
-                dbc.Button('Delete Selected', id='dict-delete-button', n_clicks=0, color='danger'),
+                dbc.Button('Delete Selected', id='dict-delete-button', n_clicks=0, color='danger', className='me-2'),
+                dbc.Button('Save Changes', id='dict-save-button', n_clicks=0, color='success'),
             ], width='auto'),
         ]),
     ], className="mb-5"),  # Space between filters and table
@@ -104,6 +110,7 @@ layout = dbc.Container([
     dbc.Row(dbc.Col(
         dash_table.DataTable(
                 data=orig_df.to_dict('records'),
+                columns=dict_columns,
                 sort_action="native",  # Enable sorting
                 #filter_action="native",  # Enable filtering
                 editable=True,  # Enable cell editing
@@ -147,11 +154,18 @@ layout = dbc.Container([
     Output('dict-delete-status', 'children'),
     Input('reload-button', 'n_clicks'),
     Input('dict-delete-button', 'n_clicks'),
+    Input('dict-save-button', 'n_clicks'),
     State('dict-display', 'selected_rows'),
     State('dict-display', 'data'),
 )
-def reload_table(reload_clicks, delete_clicks, selected_rows, table_data):
+def reload_table(reload_clicks, delete_clicks, save_clicks, selected_rows, table_data):
     triggered = ctx.triggered_id
+
+    if triggered == 'dict-save-button':
+        if not table_data:
+            return dash.no_update, dash.no_update, "Nothing to save."
+        message = sql_patch_worddict_rows(table_data)
+        return dash.no_update, dash.no_update, message
 
     if triggered == 'dict-delete-button':
         if not selected_rows or not table_data:

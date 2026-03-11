@@ -159,9 +159,60 @@ def sql_update_worddict(df: pd.DataFrame):
     except SQLAlchemyError as e:
         message = f"Replace-by-word transaction failed: {e}"
         return message 
- 
 
- 
+
+def sql_patch_worddict_rows(records: list) -> str:
+    """
+    Update editable fields on existing WordDict rows in-place, identified by word_id.
+
+    Only the following columns are updated (others like word_id, added_date are ignored):
+        word_category, word_rarity, type, meaning,
+        pinyin, sentence, sentence_pinyin, sentence_meaning
+
+    Args:
+        records: List of dicts from the DataTable (display-name keys, e.g. 'Word Category').
+
+    Returns:
+        A status message string.
+    """
+    col_map = {
+        'Word Id': 'word_id',
+        'Word Category': 'word_category',
+        'Word Rarity': 'word_rarity',
+        'Type': 'type',
+        'Meaning': 'meaning',
+        'Pinyin': 'pinyin',
+        'Sentence': 'sentence',
+        'Sentence Pinyin': 'sentence_pinyin',
+        'Sentence Meaning': 'sentence_meaning',
+    }
+    EDITABLE = {'word_category', 'word_rarity', 'type', 'meaning', 'pinyin',
+                'sentence', 'sentence_pinyin', 'sentence_meaning'}
+
+    if not records:
+        return "No records to update."
+
+    try:
+        with Session(engine) as session:
+            updated = 0
+            for rec in records:
+                normalised = {col_map.get(k, k): v for k, v in rec.items()}
+                word_id = normalised.get('word_id')
+                if not word_id:
+                    continue
+                patch = {k: v for k, v in normalised.items() if k in EDITABLE}
+                if not patch:
+                    continue
+                session.query(WordDict)\
+                       .filter(WordDict.word_id == word_id)\
+                       .update(patch, synchronize_session=False)
+                updated += 1
+            session.commit()
+        return f"Updated {updated} row(s) successfully."
+    except SQLAlchemyError as e:
+        return f"Update failed: {e}"
+
+
 def sql_update_phrasedict(df: pd.DataFrame):
     """
     For every distinct `word` in df:
