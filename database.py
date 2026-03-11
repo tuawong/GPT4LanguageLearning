@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy import create_engine, event, inspect, text
-from models import WordDict, QuizAgg, PhraseDict, QuizLog, Base, WordComparison
+from models import WordDict, QuizAgg, PhraseDict, QuizLog, Base, WordComparison, APILatencyLog
 import hashlib
 import pandas as pd
 import uuid

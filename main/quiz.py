@@ -284,7 +284,14 @@ class QuizGenerator:
             meaning = meaning_answer
             )
 
-        sample_response_translation = get_completion(prompt=quiz_prompt, temperature=1)
+        if isinstance(meaning_answer, (list, tuple)):
+            num_items = len(meaning_answer)
+        elif isinstance(meaning_answer, str):
+            num_items = len(quiz_df)
+        else:
+            num_items = len(quiz_df)
+
+        sample_response_translation = get_completion(prompt=quiz_prompt, temperature=1, category='quiz_eval', num_items=num_items)
         meaning_eval_df = parse_meaning_table(sample_response_translation.output_text)
         meaning_eval_df = meaning_eval_df.reset_index(drop=True)
         #meaning_eval_df.columns = [col.lower().replace(' ', '_') for col in meaning_eval_df.columns]

@@ -251,7 +251,9 @@ class PhraseGenerationPipeline:
                 existing_phrases=existing_phrases
                 ),
             model=translation_model, 
-            temperature=temp)
+            temperature=temp,
+            category='phrase_gen',
+            num_items=num_phrases)
         self.phrase_gen_response = phrase_gen_response
 
         new_phrase_df = parse_response_table(phrase_gen_response.output_text, date_col=['Added Date'])
@@ -268,7 +270,9 @@ class PhraseGenerationPipeline:
         phrase_gen_response =  get_completion(
             prompt = get_prompt_to_respond(input_phrases, complexity=complexity, tone=tone),
             model=translation_model, 
-            temperature=temp)
+            temperature=temp,
+            category='phrase_response',
+            num_items=len(input_phrases))
         self.phrase_gen_response = phrase_gen_response
 
         new_phrase_df = parse_response_table(phrase_gen_response.output_text, date_col=['Added Date'])
@@ -285,7 +289,9 @@ class PhraseGenerationPipeline:
         phrase_gen_response =  get_completion(
             prompt = get_prompt_to_translate(input_phrases, complexity=complexity, tone=tone),
             model=translation_model, 
-            temperature=temp)
+            temperature=temp,
+            category='phrase_translate',
+            num_items=len(input_phrases))
         self.phrase_gen_response = phrase_gen_response
 
         new_phrase_df = parse_response_table(phrase_gen_response.output_text, date_col=['Added Date'])

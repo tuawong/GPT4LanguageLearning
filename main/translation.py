@@ -362,12 +362,22 @@ class TranslationPipeline:
         ):
         
         print(translation_model, rarity_model)
+        print(word_list)
+        print(len(word_list))
+        ## Determine word count regardless of whether word_list is a list or a comma-separated string
+        if isinstance(word_list, (list, tuple)):
+            _num_items = len(word_list)
+        else:
+            _num_items = len([w.strip() for w in word_list.split(',') if w.strip()])
+
         ## Generate words translation
         translation_response = (
             get_completion(
                 prompt=get_prompt_for_chinese_translation(word_list), 
                 model=translation_model , 
-                temperature=temp
+                temperature=temp,
+                category='translation',
+                num_items=_num_items,
                 ))
 
         newwords_df = (
@@ -383,7 +393,9 @@ class TranslationPipeline:
             get_completion(
                 prompt=get_prompt_for_multiclass_rarity_classification(word_list), 
                 model=rarity_model, 
-                temperature=temp
+                temperature=temp,
+                category='rarity_classification',
+                num_items=_num_items,
                 )
             )
         word_rarity_df = parse_response_table(rarity_response.output_text)
@@ -399,7 +411,8 @@ class TranslationPipeline:
                     time.sleep(1) 
                     rarity_response = (
                         get_completion(
-                            prompt=get_prompt_for_multiclass_rarity_classification(word_list), model=rarity_model, temperature=temp))
+                            prompt=get_prompt_for_multiclass_rarity_classification(word_list), model=rarity_model, temperature=temp,
+                            category='rarity_classification', num_items=_num_items))
                     word_rarity_df = parse_response_table(rarity_response.output_text)
 
         newwords_df = pd.merge(newwords_df, word_rarity_df, on='Word', how='left')
@@ -469,7 +482,7 @@ class WordComparisonPipeline:
             Single-row DataFrame with the comparison result.
         """
         prompt = get_prompt_for_word_comparison(word1, word2)
-        response = get_completion(prompt, model=model, temperature=temperature)
+        response = get_completion(prompt, model=model, temperature=temperature, category='word_comparison', num_items=1)
         result_df = parse_response_table(response.output_text)
         self.result_df = result_df
         return result_df

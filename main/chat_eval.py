@@ -170,7 +170,9 @@ class ResponseQuizGenerator:
                 get_completion(
                     prompt=prompt, 
                     model=model , 
-                    temperature=temp
+                    temperature=temp,
+                    category='chat_gen',
+                    num_items=num_phrases,
                     )
                 )
             content = sample_response_translation.output_text
@@ -199,7 +201,8 @@ class ResponseQuizGenerator:
                 get_completion(
                     prompt=get_prompt_convo_eval(eval_df), 
                     model=model , 
-                    temperature=temp
+                    temperature=temp,
+                    category='chat_eval',
                     )
                 )
         elif mode == "translation":
@@ -207,7 +210,8 @@ class ResponseQuizGenerator:
                 get_completion(
                     prompt=get_prompt_translation_eval(eval_df), 
                     model=model , 
-                    temperature=temp
+                    temperature=temp,
+                    category='chat_eval',
                     )
                 )
         else:
