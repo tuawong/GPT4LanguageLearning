@@ -138,7 +138,13 @@ layout = dbc.Container([
                         'if': {'state': 'selected'},
                         'backgroundColor': '#cfe2ff',
                         'border': '1px solid #0d6efd',
-                    }
+                    },
+                    {
+                        'if': {'column_id': 'Word'},
+                        'fontSize': '25px',
+                    },
+                    *[{'if': {'column_id': col}, 'fontSize': '22px'}
+                      for col in ['Sentence', 'Sentence Pinyin', 'Sentence Meaning']],
                 ],
                 page_size=15, 
                 id='dict-display'

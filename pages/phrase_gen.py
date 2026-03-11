@@ -188,6 +188,10 @@ layout = dbc.Container([
                     "padding": "10px",      # Add padding to cells
                     "fontFamily": "Arial",  # Set font
                 },
+                style_data_conditional=[
+                    *[{'if': {'column_id': col}, 'fontSize': '22px'}
+                      for col in ['Line', 'Response']],
+                ],
         ),
         width=12,
         className="shadow-lg p-3 mb-5 bg-white rounded"

@@ -56,6 +56,13 @@ _table_style = dict(
         'backgroundColor': '#ffffff',
         'color': '#212529',
     },
+    style_data_conditional=[
+        *[{'if': {'column_id': col}, 'fontSize': '25px'}
+          for col in ['Word 1', 'Word 2']],
+        *[{'if': {'column_id': col}, 'fontSize': '22px'}
+          for col in ['Word 1 Example', 
+                      'Word 2 Example', ]],
+    ],
 )
 
 
@@ -202,9 +209,10 @@ layout = dbc.Container([
                     'if': {'state': 'selected'},
                     'backgroundColor': '#cfe2ff',
                     'border': '1px solid #0d6efd',
-                }
+                },
+                *_table_style['style_data_conditional'],
             ],
-            **_table_style,
+            **{k: v for k, v in _table_style.items() if k != 'style_data_conditional'},
         ),
         width=12,
         className="shadow-lg p-3 mb-4 bg-white rounded"

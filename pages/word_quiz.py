@@ -168,6 +168,12 @@ layout = dbc.Container([
                             'backgroundColor': '#ffffff',  # White background for data
                             'color': '#212529'  # Dark text color
                         },
+                        style_data_conditional=[
+                            *[{'if': {'column_id': col}, 'fontSize': '25px'}
+                              for col in ['Word']],
+                            *[{'if': {'column_id': col}, 'fontSize': '22px'}
+                              for col in ['Sentence']],
+                        ],
                         page_size=50, 
                         id='quiz-display'
                 ),

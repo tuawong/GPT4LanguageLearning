@@ -91,6 +91,10 @@ layout = dbc.Container([
                     'backgroundColor': '#ffffff',  # White background for data
                     'color': '#212529'  # Dark text color
                 },
+                style_data_conditional=[
+                    *[{'if': {'column_id': col}, 'fontSize': '25px'}
+                      for col in ['Line', 'Response']],
+                ],
                 page_size=20, 
                 id='phrase-dict-display'
             ),
