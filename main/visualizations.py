@@ -135,7 +135,7 @@ def create_top_errors_chart(df: pd.DataFrame) -> go.Figure:
     top_pinyin['Pinyin Wrong %'] = (top_pinyin['Num Pinyin Wrong'] / top_pinyin['Quiz Attempts'] * 100).round(1)
     top_pinyin = top_pinyin[top_pinyin['Num Pinyin Wrong'] >= 1].sort_values(
         by=['Pinyin Wrong %', 'Num Pinyin Wrong'], ascending=[False, False]
-    ).head(10)
+    ).head(20)
     top_pinyin['Label'] = '(' + top_pinyin['Pinyin Wrong %'].astype(str) + '%, ' + top_pinyin['Quiz Attempts'].astype(str) + ')'
     top_pinyin['Word Display'] = top_pinyin['Word'] + ' (' + top_pinyin['Pinyin'] + ')'
 
@@ -149,13 +149,13 @@ def create_top_errors_chart(df: pd.DataFrame) -> go.Figure:
     top_meaning['Meaning Wrong %'] = (top_meaning['Num Meaning Wrong'] / top_meaning['Quiz Attempts'] * 100).round(1)
     top_meaning = top_meaning[top_meaning['Num Meaning Wrong'] >= 1].sort_values(
         by=['Meaning Wrong %', 'Num Meaning Wrong'], ascending=[False, False]
-    ).head(10)
+    ).head(20)
     top_meaning['Label'] = '(' + top_meaning['Meaning Wrong %'].astype(str) + '%, ' + top_meaning['Quiz Attempts'].astype(str) + ')'
     top_meaning['Word Display'] = top_meaning['Word'] + ' (' + top_meaning['Pinyin'] + ')'
 
     fig = make_subplots(
         rows=1, cols=2, 
-        subplot_titles=('Top 10 Pinyin Errors', 'Top 10 Meaning Errors'),
+        subplot_titles=('Top 20 Pinyin Errors', 'Top 20 Meaning Errors'),
         horizontal_spacing=0.2
     )
 
@@ -183,7 +183,7 @@ def create_top_errors_chart(df: pd.DataFrame) -> go.Figure:
         template=CHART_TEMPLATE,
         font=CHART_FONT,
         showlegend=False,
-        height=400,
+        height=800,
         margin=dict(l=80, r=80, t=60, b=40)
     )
     fig.update_xaxes(title_text='% Incorrect', row=1, col=1, range=[0, 120])
@@ -285,7 +285,7 @@ def create_quiz_coverage_chart(df: pd.DataFrame) -> go.Figure:
         font=CHART_FONT,
         margin=dict(l=20, r=20, t=20, b=20),
         showlegend=False,
-        height=400,
+        height=800,
         annotations=[dict(
             text=f'{total_quizzed}<br>quizzed',
             x=0.5, y=0.5,
