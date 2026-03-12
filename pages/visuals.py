@@ -13,12 +13,14 @@ from main.visualizations import (
     create_quiz_coverage_chart
 )
 from main.sql import load_dict
+from database import engine
 
 dash.register_page(__name__, path='/stats', name='Quiz Statistics')
 
 # Load and prepare data initially
 orig_df = load_dict()
 orig_df = prepare_df(orig_df)
+orig_quiz_log = pd.read_sql("SELECT quiz_id, last_quiz, pinyin_correct, meaning_correct FROM QuizLog", engine)
 
 # Calculate summary stats
 total_words = len(orig_df)
@@ -115,7 +117,7 @@ layout = dbc.Container([
                 dbc.CardBody([
                     dcc.Graph(
                         id='quiz-by-date', 
-                        figure=create_quiz_by_date_chart(orig_df),
+                        figure=create_quiz_by_date_chart(orig_quiz_log),
                         config={'displayModeBar': False}
                     )
                 ])
@@ -231,6 +233,7 @@ def update_charts(n_clicks):
     
     df = load_dict()
     df = prepare_df(df)
+    quiz_log = pd.read_sql("SELECT quiz_id, last_quiz, pinyin_correct, meaning_correct FROM QuizLog", engine)
     
     # Calculate updated summary stats
     total_words = len(df)
@@ -244,7 +247,7 @@ def update_charts(n_clicks):
         create_quiz_coverage_chart(df),
         create_words_by_category_chart(df),
         create_category_performance_chart(df),
-        create_quiz_by_date_chart(df),
+        create_quiz_by_date_chart(quiz_log),
         create_top_errors_chart(df),
         create_stat_card("Total Words", f"{total_words:,}", "fa-book", "primary"),
         create_stat_card("Words Quizzed", f"{words_quizzed:,}", "fa-check-circle", "success"),

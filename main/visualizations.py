@@ -28,24 +28,34 @@ def prepare_df(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def create_quiz_by_date_chart(df: pd.DataFrame) -> go.Figure:
-    """Quiz attempts by day with total attempts and percentage correct."""
-    quiz_by_date = df.groupby('Last Quiz').agg({
-        'Quiz Attempts': 'sum',
-        'Num Pinyin Correct': 'sum',
-        'Num Meaning Correct': 'sum'
-    }).reset_index()
+def create_quiz_by_date_chart(quiz_log: pd.DataFrame) -> go.Figure:
+    """Quiz attempts by day with total attempts and percentage correct.
 
-    quiz_by_date['Total Correct'] = quiz_by_date['Num Pinyin Correct'] + quiz_by_date['Num Meaning Correct']
-    quiz_by_date['Total Attempts'] = quiz_by_date['Quiz Attempts'] * 2  # Each quiz has pinyin and meaning
+    Expects the raw QuizLog table (one row per word attempt) with columns:
+    quiz_id, last_quiz, pinyin_correct, meaning_correct (values 'yes'/'no').
+    """
+    ql = quiz_log.copy()
+    ql['last_quiz'] = pd.to_datetime(ql['last_quiz'], format='mixed', errors='coerce').dt.normalize()
+    ql['pinyin_correct'] = ql['pinyin_correct'].str.strip().str.lower()
+    ql['meaning_correct'] = ql['meaning_correct'].str.strip().str.lower()
+
+    quiz_by_date = ql.groupby('last_quiz').agg(
+        word_attempts=('quiz_id', 'count'),
+        pinyin_correct_sum=('pinyin_correct', lambda x: (x == 'yes').sum()),
+        meaning_correct_sum=('meaning_correct', lambda x: (x == 'yes').sum()),
+    ).reset_index()
+
+    quiz_by_date['Total Correct'] = quiz_by_date['pinyin_correct_sum'] + quiz_by_date['meaning_correct_sum']
+    quiz_by_date['Total Attempts'] = quiz_by_date['word_attempts'] * 2  # Each attempt tests pinyin + meaning
     quiz_by_date['Correct %'] = (quiz_by_date['Total Correct'] / quiz_by_date['Total Attempts'] * 100).round(1)
+    quiz_by_date = quiz_by_date.rename(columns={'last_quiz': 'Last Quiz'})
 
     fig = make_subplots(specs=[[{"secondary_y": True}]])
     fig.add_trace(go.Scatter(
         x=quiz_by_date['Last Quiz'],
-        y=quiz_by_date['Total Attempts'],
+        y=quiz_by_date['word_attempts'],
         mode='lines+markers',
-        name='Total Attempts',
+        name='Words Attempted',
         line=dict(color=COLORS['primary'], width=2),
         marker=dict(size=6),
         fill='tozeroy',
@@ -68,7 +78,7 @@ def create_quiz_by_date_chart(df: pd.DataFrame) -> go.Figure:
         legend=dict(orientation='h', yanchor='bottom', y=1.02, xanchor='right', x=1),
         height=350
     )
-    fig.update_yaxes(title_text='Total Attempts', secondary_y=False)
+    fig.update_yaxes(title_text='Words Attempted', secondary_y=False)
     fig.update_yaxes(title_text='Correct %', secondary_y=True, range=[0, 100])
     return fig
 
