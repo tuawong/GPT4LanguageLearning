@@ -144,7 +144,7 @@ layout = dbc.Container([
                         'fontSize': '25px',
                     },
                     *[{'if': {'column_id': col}, 'fontSize': '22px'}
-                      for col in ['Sentence', 'Sentence Pinyin', 'Sentence Meaning']],
+                      for col in ['Sentence']],
                 ],
                 page_size=15, 
                 id='dict-display'

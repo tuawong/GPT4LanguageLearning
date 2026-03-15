@@ -88,6 +88,10 @@ layout = dbc.Container(
                                     "padding": "10px",      # Add padding to cells
                                     "fontFamily": "Arial",  # Set font
                                 },
+                                style_cell_conditional=[
+                                    {'if': {'column_id': 'Word'}, 'fontSize': '25px'},
+                                    {'if': {'column_id': 'Sentence'}, 'fontSize': '22px'},
+                                ],
                             ),
                         ]
                     ),
