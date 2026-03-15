@@ -5,7 +5,6 @@ from main.translation import *
 import pandas as pd
 import dash_bootstrap_components as dbc
 
-import main.Constants as Constants
 from database import engine, ensure_views_from_files
 from main.sql import load_dict, sql_delete_word_dict, sql_patch_worddict_rows
 

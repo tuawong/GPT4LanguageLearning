@@ -6,11 +6,9 @@ from main.chat_eval import ResponseQuizGenerator
 import pandas as pd
 import dash_bootstrap_components as dbc
 
-import main.Constants as Constants
-
 # Incorporate data
-#dict_sheet_name = Constants.RESPONSE_LOG_SHEET_NAME
-#gsheet_name = Constants.SHEET_NAME
+#dict_sheet_name = RESPONSE_LOG_SHEET_NAME
+#gsheet_name = SHEET_NAME
 
 response_quiz_generator = ResponseQuizGenerator()
 

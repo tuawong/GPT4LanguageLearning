@@ -1,8 +1,9 @@
 from typing import List
 
-import main.Constants as Constants
+from dotenv import load_dotenv
 from  openai import OpenAI
 import os
+load_dotenv()
 import numpy as np
 import pandas as pd
 import time
@@ -12,7 +13,7 @@ from io import StringIO
 from datetime import datetime
 
 client = OpenAI(
-    api_key = Constants.API_KEY_OPENAI,
+    api_key = os.getenv('API_KEY_OPENAI'),
 )
 
 # Pricing: (input_per_token_usd, output_per_token_usd)

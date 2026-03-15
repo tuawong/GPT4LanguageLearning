@@ -18,8 +18,6 @@ import sys
 
 from main.gsheets import load_gsheet_dict
 from main.translation import TranslationPipeline
-import main.Constants as Constants
-
 # Incorporate data
 #dict_sheet_name = Constants.DICT_SHEET_NAME
 #gsheet_name = Constants.SHEET_NAME

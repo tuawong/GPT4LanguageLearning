@@ -1,8 +1,9 @@
 from typing import List
 
-import main.Constants as Constants
+from dotenv import load_dotenv
 from  openai import OpenAI
 import os
+load_dotenv()
 import numpy as np
 import pandas as pd
 import time
@@ -16,8 +17,8 @@ from main.sql import load_phrase_dict
 from main.utils import get_completion, parse_response_table
 from main.sql import sql_update_phrasedict
 
-gsheet_name = Constants.SHEET_NAME
-phrasesheet_name = Constants.PHRASE_SHEET_NAME
+gsheet_name = os.getenv('SHEET_NAME')
+phrasesheetname = os.getenv('PHRASE_SHEET_NAME')
 
 #phrase_dict = load_gsheet_dict(gsheet_mode=True, gsheet_name=gsheet_name, worksheet_name=phrasesheet_name)
 phrase_dict = load_phrase_dict()
@@ -25,7 +26,7 @@ phrase_dict = load_phrase_dict()
 existing_cat = phrase_dict['Category'].drop_duplicates().values
 
 client = OpenAI(
-    api_key = Constants.API_KEY_OPENAI,
+    api_key = os.getenv('API_KEY_OPENAI'),
 )
 
 

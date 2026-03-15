@@ -7,27 +7,17 @@ import dash_bootstrap_components as dbc
 from dotenv import load_dotenv
 import os
 import sys
-
-
-# Load environment variables from .env file
-# So we can import from upper folders
-#load_dotenv()
-#pythonpaths = os.getenv("PYTHONPATH", "").split(os.pathsep)
-#for path in pythonpaths:
-#    if path and path not in sys.path:
-#        sys.path.insert(0, path)
-
+load_dotenv()
 
 from main.gsheets import load_gsheet_dict
 from main.phrase_generator import PhraseGenerationPipeline
 from main.dash_utils import create_tabs
 from main.sql import load_phrase_dict
-import main.Constants as Constants
 
 
 # Incorporate data
-phrasesheet_name = Constants.PHRASE_SHEET_NAME
-gsheet_name = Constants.SHEET_NAME
+phrasesheet_name = os.getenv('PHRASE_SHEET_NAME')
+gsheet_name = os.getenv('SHEET_NAME')
 
 #df = load_dict(gsheet_mode=True, gsheet_name=gsheet_name, worksheet_name=phrasesheet_name)
 df = pd.DataFrame()

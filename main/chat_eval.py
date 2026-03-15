@@ -1,8 +1,9 @@
 from typing import List
 
-import main.Constants as Constants
+from dotenv import load_dotenv
 from  openai import OpenAI
 import os
+load_dotenv()
 import numpy as np
 import pandas as pd
 import time
@@ -17,7 +18,7 @@ from main.sql import sql_update_responselog
 
 
 client = OpenAI(
-    api_key = Constants.API_KEY_OPENAI,
+    api_key = os.getenv('API_KEY_OPENAI'),
 )
 
 def get_prompt_for_structure_convo():

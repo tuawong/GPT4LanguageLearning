@@ -6,11 +6,13 @@ from main.quiz import QuizGenerator
 import pandas as pd
 import dash_bootstrap_components as dbc
 
-import main.Constants as Constants
+from dotenv import load_dotenv
+import os
+load_dotenv()
 from main.sql import load_dict
 # Incorporate data
-dict_sheet_name = Constants.DICT_SHEET_NAME
-gsheet_name = Constants.SHEET_NAME
+dict_sheet_name = os.getenv('DICT_SHEET_NAME')
+gsheet_name = os.getenv('SHEET_NAME')
 
 #orig_df = load_dict(gsheet_mode=True, gsheet_name=gsheet_name, worksheet_name=dict_sheet_name)
 orig_df = load_dict()
