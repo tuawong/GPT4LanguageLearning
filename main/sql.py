@@ -32,16 +32,20 @@ def load_dict():
     'added_date': 'Added Date',
     'num_quiz_attempt': 'Quiz Attempts',
     'pinyin_correct_cnt': 'Num Pinyin Correct',
+    'pinyin_wrong_cnt': 'Num Pinyin Wrong',
     'meaning_correct_cnt': 'Num Meaning Correct',
+    'meaning_wrong_cnt': 'Num Meaning Wrong',
     'last_quiz': 'Last Quiz'}
 
-    cols = ['Word Id', 'Word', 'Pinyin', 'Pinyin Simplified', 'Meaning', 'Added Date', 'Word Category', 'Word Rarity', 'Type', 'Sentence', 'Sentence Pinyin', 'Sentence Meaning', 'Quiz Attempts', 'Num Pinyin Correct', 'Num Meaning Correct', 'Last Quiz']
+    cols = ['Word Id', 'Word', 'Pinyin', 'Pinyin Simplified', 'Meaning', 'Added Date', 'Word Category', 'Word Rarity', 'Type', 'Sentence', 'Sentence Pinyin', 'Sentence Meaning', 'Quiz Attempts', 'Num Pinyin Correct', 'Num Pinyin Wrong', 'Num Meaning Correct', 'Num Meaning Wrong', 'Last Quiz']
     orig_df = pd.read_sql("""
                     SELECT 
                         WordDict.*, 
                         IIF(num_quiz_attempt IS NULL, 0, num_quiz_attempt) AS num_quiz_attempt,
                         IIF(pinyin_correct_cnt IS NULL, 0, pinyin_correct_cnt) AS pinyin_correct_cnt,
-                        IIF(meaning_correct_cnt IS NULL, 0, meaning_correct_cnt) AS meaning_correct_cnt, 
+                        IIF(pinyin_wrong_cnt IS NULL, 0, pinyin_wrong_cnt) AS pinyin_wrong_cnt,
+                        IIF(meaning_correct_cnt IS NULL, 0, meaning_correct_cnt) AS meaning_correct_cnt,
+                        IIF(meaning_wrong_cnt IS NULL, 0, meaning_wrong_cnt) AS meaning_wrong_cnt,
                         last_quiz
                     FROM WordDict
                     LEFT JOIN QuizScore ON (WordDict.word_id = QuizScore.word_id) AND (WordDict.word = QuizScore.word)
