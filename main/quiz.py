@@ -59,6 +59,68 @@ def calculate_adaptive_weights(
     return (powered / powered.sum()).values
 
 
+def get_top_error_word_ids(df: pd.DataFrame, n: int = 20) -> list:
+    """
+    Returns up to n word_ids representing the worst-performing words.
+
+    Combines the top-n pinyin-error words and top-n meaning-error words
+    (by % incorrect), then for each unique word picks one word_id at random
+    (handles the case where a word has multiple meanings / word_ids).
+    Words no longer present in the dictionary are automatically excluded
+    because df only contains current dictionary entries.
+
+    Args:
+        df: DataFrame returned by load_dict() (must contain 'Word', 'Word Id',
+            'Num Pinyin Wrong', 'Num Meaning Wrong', 'Quiz Attempts').
+        n:  Maximum number of words to return (default 20).
+
+    Returns:
+        List of word_id strings (length <= n).
+    """
+    work = df.copy()
+
+    # Top-n pinyin errors (by % wrong, then raw count as tiebreaker)
+    top_pinyin = (
+        work.groupby('Word')
+        .agg(num_pinyin_wrong=('Num Pinyin Wrong', 'sum'),
+             quiz_attempts=('Quiz Attempts', 'sum'))
+        .reset_index()
+    )
+    top_pinyin = top_pinyin[top_pinyin['quiz_attempts'] > 1]
+    top_pinyin['pct'] = top_pinyin['num_pinyin_wrong'] / top_pinyin['quiz_attempts']
+    top_pinyin = (
+        top_pinyin[top_pinyin['num_pinyin_wrong'] >= 1]
+        .sort_values(by=['pct', 'num_pinyin_wrong'], ascending=[False, False])
+        .head(n)
+    )
+
+    # Top-n meaning errors
+    top_meaning = (
+        work.groupby('Word')
+        .agg(num_meaning_wrong=('Num Meaning Wrong', 'sum'),
+             quiz_attempts=('Quiz Attempts', 'sum'))
+        .reset_index()
+    )
+    top_meaning = top_meaning[top_meaning['quiz_attempts'] > 1]
+    top_meaning['pct'] = top_meaning['num_meaning_wrong'] / top_meaning['quiz_attempts']
+    top_meaning = (
+        top_meaning[top_meaning['num_meaning_wrong'] >= 1]
+        .sort_values(by=['pct', 'num_meaning_wrong'], ascending=[False, False])
+        .head(n)
+    )
+
+    top_words = set(top_pinyin['Word'].tolist()) | set(top_meaning['Word'].tolist())
+
+    # For each word, pick one word_id at random (handles multiple meanings)
+    word_ids = []
+    for word in top_words:
+        candidates = work.loc[work['Word'] == word, 'Word Id'].tolist()
+        if candidates:
+            word_ids.append(np.random.choice(candidates))
+
+    return word_ids
+
+
 def get_prompt_generate_word_quiz(
     word_dict: pd.DataFrame,
     startfrom_date_filter: str = None,
@@ -207,11 +269,25 @@ class QuizGenerator:
             new_words_only: bool = False,
             adaptive_sampling: bool = True,
             spread_power: float = 1.0,
-            seed: float = 0.01
+            seed: float = 0.01,
+            word_ids: List[str] = None,
         ) -> pd.DataFrame:
         self.new_words_only = new_words_only
         self.spread_power = spread_power if adaptive_sampling else 1.0
         dict_df = self.dict_df.copy()
+
+        # When explicit word_ids are provided, skip all filters and sampling
+        if word_ids is not None:
+            dict_df = dict_df[dict_df[id_column].isin(word_ids)]
+            quiz_answer_key = dict_df[
+                ['Word Id', 'Word', 'Word Category', 'Sentence', 'Sentence Pinyin', 'Pinyin', 'Pinyin Simplified']
+            ].sample(frac=1).reset_index(drop=True)
+            quiz_df = quiz_answer_key.drop(columns=['Pinyin', 'Pinyin Simplified', 'Sentence Pinyin'])
+            quiz_df['Pinyin'] = ''
+            quiz_df['Meaning'] = ''
+            self.answer_key = quiz_answer_key
+            self.quiz = quiz_df
+            return quiz_df
 
         if date_filter is not None:
             dict_df = dict_df[dict_df[date_column] >= date_filter]

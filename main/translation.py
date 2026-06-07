@@ -53,8 +53,8 @@ def get_prompt_for_word_comparison(word1, word2):
     5) Meaning: The shared meaning or general definition of the two words.
     6) Part of Speech 1: The part of speech for the first word (e.g., noun, verb, adjective).
     7) Part of Speech 2: The part of speech for the second word (e.g., noun, verb, adjective).
-    8) Word 1 Nuance: A description of nuances or usage contexts specific to the first word.
-    9) Word 2 Nuance: A description of nuances or usage contexts specific to the second word.
+    8) Word 1 Nuance: A description of nuances or usage contexts specific to the first word.  This column MUST be in English.
+    9) Word 2 Nuance: A description of nuances or usage contexts specific to the second word. This column MUST be in English.
     10) Word 1 Tone: Indicates the tone or register (e.g., casual, formal) typically associated with the first word.
     11) Word 2 Tone: Indicates the tone or register (e.g., casual, formal) typically associated with the second word.
     12) Word 1 Example: An example sentence using the first word.

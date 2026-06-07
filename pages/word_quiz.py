@@ -2,7 +2,7 @@
 import dash
 from dash import Dash, html, dash_table, dcc, callback, Output, Input, State, callback_context
 from main.translation import *
-from main.quiz import QuizGenerator
+from main.quiz import QuizGenerator, get_top_error_word_ids
 import pandas as pd
 import dash_bootstrap_components as dbc
 
@@ -68,7 +68,7 @@ layout = dbc.Container([
                             dcc.Slider(
                                 id='spread-power-slider',
                                 min=0.25,
-                                max=3.0,
+                                max=5.0,
                                 step=0.25,
                                 value=1.0,
                                 marks={
@@ -76,6 +76,7 @@ layout = dbc.Container([
                                     1.0:  {'label': '1x (default)', 'style': {'fontSize': '11px'}},
                                     2.0:  {'label': '2x', 'style': {'fontSize': '11px'}},
                                     3.0:  {'label': '3x', 'style': {'fontSize': '11px'}},
+                                    5.0:  {'label': '3x', 'style': {'fontSize': '11px'}},
                                 },
                             ),
                             html.Div(
@@ -137,7 +138,15 @@ layout = dbc.Container([
                 inline=True,
                 style={'marginBottom': '10px'}
             ),
-            dbc.Button('Generate Quiz', id='gen-quiz-button', n_clicks=0, color='primary')
+            dbc.Button('Generate Quiz', id='gen-quiz-button', n_clicks=0, color='primary'),
+            dbc.Button(
+                'Quiz Top Errors',
+                id='top-errors-quiz-button',
+                n_clicks=0,
+                color='danger',
+                className='ms-2',
+                title='Generate a quiz from the top 20 pinyin and meaning error words'
+            ),
         ]),
     ], className="mb-3"),
 
@@ -206,6 +215,7 @@ def update_spread_label(value):
     [
         Input('gen-quiz-button', 'n_clicks'),
         Input('score-quiz-button', 'n_clicks'),
+        Input('top-errors-quiz-button', 'n_clicks'),
     ],
     [
         State('quiz-word-num', 'value'),
@@ -218,7 +228,7 @@ def update_spread_label(value):
         State('quiz-display', 'data'),
     ],
 )
-def handle_quiz_buttons(n_quiz_clicks, n_score_clicks, num_words, date_filter, category_filter, rarity_filter, new_words_only, adaptive_sampling, spread_power, quiz_table_data):
+def handle_quiz_buttons(n_quiz_clicks, n_score_clicks, n_top_errors_clicks, num_words, date_filter, category_filter, rarity_filter, new_words_only, adaptive_sampling, spread_power, quiz_table_data):
     ctx = callback_context  # Determine which input triggered the callback
     
     # Default outputs
@@ -260,6 +270,25 @@ def handle_quiz_buttons(n_quiz_clicks, n_score_clicks, num_words, date_filter, c
         display_columns = [{"name": i, "id": i} for i in display_df.columns]
         message = "Quiz Generated!"
 
+    elif button_id == 'top-errors-quiz-button' and n_top_errors_clicks > 0:
+        # Reload fresh data so scores reflect latest quiz history
+        fresh_df = load_dict()
+        quiz_generator.dict_df = fresh_df
+
+        top_word_ids = get_top_error_word_ids(fresh_df, n=20)
+
+        if not top_word_ids:
+            return [], [], "No error words found yet. Complete some quizzes first!"
+
+        quiz_df = quiz_generator.generate_pinyin_and_meaning_quiz(
+            id_column=id_col,
+            word_ids=top_word_ids,
+        )
+        display_df = quiz_df.drop(columns=['Word Id'])
+        display_data = display_df.to_dict('records')
+        display_columns = [{"name": i, "id": i} for i in display_df.columns]
+        message = f"Top Errors Quiz Generated! ({len(display_df)} words)"
+
     elif button_id == 'score-quiz-button' and n_score_clicks > 0:
         # Handle Scoring the Quiz
         if quiz_table_data:  # Ensure there is data to score
@@ -281,7 +310,7 @@ def handle_quiz_buttons(n_quiz_clicks, n_score_clicks, num_words, date_filter, c
             
             # Reload dataset so "New Words Only" filter reflects updated quiz status
             updated_df = load_dict()
-            quiz_generator.df = updated_df
+            quiz_generator.dict_df = updated_df
 
             quiz_generator.quiz_result = None  # Reset quiz result after scoring
 
