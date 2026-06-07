@@ -59,64 +59,56 @@ def calculate_adaptive_weights(
     return (powered / powered.sum()).values
 
 
-def get_top_error_word_ids(df: pd.DataFrame, n: int = 20) -> list:
+def get_top_error_word_ids(df: pd.DataFrame, n: int = 20, error_type: str = 'pinyin') -> list:
     """
-    Returns up to n word_ids representing the worst-performing words.
+    Returns up to n word_ids for the worst-performing words.
 
-    Combines the top-n pinyin-error words and top-n meaning-error words
-    (by % incorrect), then for each unique word picks one word_id at random
-    (handles the case where a word has multiple meanings / word_ids).
-    Words no longer present in the dictionary are automatically excluded
-    because df only contains current dictionary entries.
+    Uses the same aggregation as the statistics chart (prepare_df-equivalent).
+    For words with multiple word_ids (multiple meanings), selects the word_id
+    that has the most errors so the most-problem variant is quizzed.
 
     Args:
-        df: DataFrame returned by load_dict() (must contain 'Word', 'Word Id',
-            'Num Pinyin Wrong', 'Num Meaning Wrong', 'Quiz Attempts').
-        n:  Maximum number of words to return (default 20).
+        df:         DataFrame returned by load_dict().
+        n:          Maximum number of words to return (default 20).
+        error_type: 'pinyin' to rank by pinyin error rate,
+                    'meaning' to rank by meaning error rate.
 
     Returns:
         List of word_id strings (length <= n).
     """
     work = df.copy()
+    # Mirror prepare_df: recalculate wrong counts the same way the chart does
+    work['Num Pinyin Wrong'] = work['Quiz Attempts'] - work['Num Pinyin Correct']
+    work['Num Meaning Wrong'] = work['Quiz Attempts'] - work['Num Meaning Correct']
 
-    # Top-n pinyin errors (by % wrong, then raw count as tiebreaker)
-    top_pinyin = (
+    wrong_col = 'Num Meaning Wrong' if error_type == 'meaning' else 'Num Pinyin Wrong'
+
+    agg = (
         work.groupby('Word')
-        .agg(num_pinyin_wrong=('Num Pinyin Wrong', 'sum'),
+        .agg(num_wrong=(wrong_col, 'sum'),
              quiz_attempts=('Quiz Attempts', 'sum'))
         .reset_index()
     )
-    top_pinyin = top_pinyin[top_pinyin['quiz_attempts'] > 1]
-    top_pinyin['pct'] = top_pinyin['num_pinyin_wrong'] / top_pinyin['quiz_attempts']
-    top_pinyin = (
-        top_pinyin[top_pinyin['num_pinyin_wrong'] >= 1]
-        .sort_values(by=['pct', 'num_pinyin_wrong'], ascending=[False, False])
-        .head(n)
+    agg = agg[agg['quiz_attempts'] > 1]
+    agg['pct'] = agg['num_wrong'] / agg['quiz_attempts']
+    top_words_series = (
+        agg[agg['num_wrong'] >= 1]
+        .sort_values(by=['pct', 'num_wrong'], ascending=[False, False])
+        .head(n)['Word']
     )
 
-    # Top-n meaning errors
-    top_meaning = (
-        work.groupby('Word')
-        .agg(num_meaning_wrong=('Num Meaning Wrong', 'sum'),
-             quiz_attempts=('Quiz Attempts', 'sum'))
-        .reset_index()
-    )
-    top_meaning = top_meaning[top_meaning['quiz_attempts'] > 1]
-    top_meaning['pct'] = top_meaning['num_meaning_wrong'] / top_meaning['quiz_attempts']
-    top_meaning = (
-        top_meaning[top_meaning['num_meaning_wrong'] >= 1]
-        .sort_values(by=['pct', 'num_meaning_wrong'], ascending=[False, False])
-        .head(n)
-    )
-
-    top_words = set(top_pinyin['Word'].tolist()) | set(top_meaning['Word'].tolist())
-
-    # For each word, pick one word_id at random (handles multiple meanings)
+    # For each word, prefer the word_id with the most errors (most problem variant).
+    # Fall back to random choice if all word_ids have 0 attempts.
     word_ids = []
-    for word in top_words:
-        candidates = work.loc[work['Word'] == word, 'Word Id'].tolist()
-        if candidates:
-            word_ids.append(np.random.choice(candidates))
+    for word in top_words_series:
+        word_rows = work[work['Word'] == word]
+        rows_with_history = word_rows[word_rows['Quiz Attempts'] > 0]
+        if not rows_with_history.empty:
+            # Pick the word_id with the highest wrong count for this error type
+            best_row = rows_with_history.loc[rows_with_history[wrong_col].idxmax()]
+            word_ids.append(str(best_row['Word Id']))
+        elif not word_rows.empty:
+            word_ids.append(str(np.random.choice(word_rows['Word Id'].tolist())))
 
     return word_ids
 

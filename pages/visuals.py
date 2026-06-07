@@ -1,5 +1,5 @@
 import dash
-from dash import html, dcc, callback, Output, Input
+from dash import html, dcc, callback, Output, Input, ctx
 import dash_bootstrap_components as dbc
 import pandas as pd
 import plotly.graph_objects as go
@@ -50,6 +50,7 @@ def create_stat_card(title, value, icon, color):
 
 
 layout = dbc.Container([
+    dcc.Location(id='stats-url', refresh=False),
     # Header Row
     dbc.Row([
         dbc.Col([
@@ -224,13 +225,11 @@ layout = dbc.Container([
      Output('stat-words-quizzed', 'children'),
      Output('stat-total-attempts', 'children'),
      Output('stat-avg-accuracy', 'children')],
-    Input('stats-reload-button', 'n_clicks')
+    [Input('stats-reload-button', 'n_clicks'),
+     Input('stats-url', 'pathname')]
 )
-def update_charts(n_clicks):
-    """Update all charts and stats when reload button is clicked."""
-    if n_clicks == 0:
-        return dash.no_update
-    
+def update_charts(n_clicks, _pathname):
+    """Update all charts on page load or when reload button is clicked."""
     df = load_dict()
     df = prepare_df(df)
     quiz_log = pd.read_sql("SELECT quiz_id, last_quiz, pinyin_correct, meaning_correct FROM QuizLog", engine)

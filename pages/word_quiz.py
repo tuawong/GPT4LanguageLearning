@@ -44,7 +44,30 @@ layout = dbc.Container([
                     html.Div(id='number-output', style={'marginTop': '5px', 'color': 'gray'})  # To display input feedback
                 ])
             ], className="mb-4 shadow-sm"),
-        ], width=4),
+        ], width=3),
+        dbc.Col([
+            dbc.Card([
+                dbc.CardBody([
+                    html.B("Top Error Quiz Type"),
+                    html.Div(
+                        dbc.RadioItems(
+                            id='top-error-type-radio',
+                            options=[
+                                {'label': 'Pinyin Errors', 'value': 'pinyin'},
+                                {'label': 'Meaning Errors', 'value': 'meaning'},
+                            ],
+                            value='pinyin',
+                            inline=False,
+                            style={'marginTop': '6px'},
+                        )
+                    ),
+                    html.Div(
+                        'Used by "Quiz Top Errors" button',
+                        style={'color': 'gray', 'fontSize': '11px', 'marginTop': '6px'}
+                    ),
+                ])
+            ], className="mb-4 shadow-sm"),
+        ], width=3),
         dbc.Col([
             dbc.Card([
                 dbc.CardBody([
@@ -76,7 +99,7 @@ layout = dbc.Container([
                                     1.0:  {'label': '1x (default)', 'style': {'fontSize': '11px'}},
                                     2.0:  {'label': '2x', 'style': {'fontSize': '11px'}},
                                     3.0:  {'label': '3x', 'style': {'fontSize': '11px'}},
-                                    5.0:  {'label': '3x', 'style': {'fontSize': '11px'}},
+                                    5.0:  {'label': '5x', 'style': {'fontSize': '11px'}},
                                 },
                             ),
                             html.Div(
@@ -87,7 +110,7 @@ layout = dbc.Container([
                     ])
                 ])
             ], className="mb-4 shadow-sm")
-        ], width=8),
+        ], width=6),
     ]),
     # Filter dropdowns with space in between
     dbc.Row([
@@ -226,9 +249,10 @@ def update_spread_label(value):
         State('adaptive-sampling-toggle', 'value'),
         State('spread-power-slider', 'value'),
         State('quiz-display', 'data'),
+        State('top-error-type-radio', 'value'),
     ],
 )
-def handle_quiz_buttons(n_quiz_clicks, n_score_clicks, n_top_errors_clicks, num_words, date_filter, category_filter, rarity_filter, new_words_only, adaptive_sampling, spread_power, quiz_table_data):
+def handle_quiz_buttons(n_quiz_clicks, n_score_clicks, n_top_errors_clicks, num_words, date_filter, category_filter, rarity_filter, new_words_only, adaptive_sampling, spread_power, quiz_table_data, top_error_type):
     ctx = callback_context  # Determine which input triggered the callback
     
     # Default outputs
@@ -275,7 +299,8 @@ def handle_quiz_buttons(n_quiz_clicks, n_score_clicks, n_top_errors_clicks, num_
         fresh_df = load_dict()
         quiz_generator.dict_df = fresh_df
 
-        top_word_ids = get_top_error_word_ids(fresh_df, n=20)
+        error_type = top_error_type or 'pinyin'
+        top_word_ids = get_top_error_word_ids(fresh_df, n=20, error_type=error_type)
 
         if not top_word_ids:
             return [], [], "No error words found yet. Complete some quizzes first!"
@@ -287,7 +312,8 @@ def handle_quiz_buttons(n_quiz_clicks, n_score_clicks, n_top_errors_clicks, num_
         display_df = quiz_df.drop(columns=['Word Id'])
         display_data = display_df.to_dict('records')
         display_columns = [{"name": i, "id": i} for i in display_df.columns]
-        message = f"Top Errors Quiz Generated! ({len(display_df)} words)"
+        label = 'Pinyin' if error_type == 'pinyin' else 'Meaning'
+        message = f"Top {label} Errors Quiz Generated! ({len(display_df)} words)"
 
     elif button_id == 'score-quiz-button' and n_score_clicks > 0:
         # Handle Scoring the Quiz
