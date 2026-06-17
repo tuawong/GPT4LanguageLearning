@@ -75,6 +75,26 @@ layout = dbc.Container([
             ], className="mb-4 shadow-sm")
         ], width=3),
 
+        dbc.Col([
+            dbc.Card([
+                dbc.CardBody([
+                    html.B("Page Length"),
+                    dcc.Dropdown(
+                        options=[
+                            {'label': '10 rows', 'value': 10},
+                            {'label': '15 rows', 'value': 15},
+                            {'label': '25 rows', 'value': 25},
+                            {'label': '50 rows', 'value': 50},
+                            {'label': '100 rows', 'value': 100},
+                        ],
+                        value=15,
+                        clearable=False,
+                        id='dict-page-size-dropdown',
+                    )
+                ])
+            ], className="mb-4 shadow-sm")
+        ], width=3),
+
         #Word Filter with space in between
         dbc.Col([
             dbc.Card([
@@ -238,5 +258,13 @@ def slice_table(
             out_table = out_table.loc[out_table.Word.str.contains(word_filter)]
 
     return out_table.to_dict('records')
+
+
+@callback(
+    Output('dict-display', 'page_size'),
+    Input('dict-page-size-dropdown', 'value')
+)
+def update_page_size(page_size: int) -> int:
+    return page_size or 15
 
 
