@@ -263,9 +263,11 @@ class QuizGenerator:
             spread_power: float = 1.0,
             seed: float = 0.01,
             word_ids: List[str] = None,
+            top_error_type: str = None,
         ) -> pd.DataFrame:
         self.new_words_only = new_words_only
         self.spread_power = spread_power if adaptive_sampling else 1.0
+        self.top_error_type = top_error_type
         dict_df = self.dict_df.copy()
 
         # When explicit word_ids are provided, skip all filters and sampling
@@ -280,6 +282,7 @@ class QuizGenerator:
             self.answer_key = quiz_answer_key
             self.quiz = quiz_df
             return quiz_df
+
 
         if date_filter is not None:
             dict_df = dict_df[dict_df[date_column] >= date_filter]
@@ -392,6 +395,9 @@ class QuizGenerator:
             outdf['Adaptive Sample Scale'] = None
         else:
             outdf['Adaptive Sample Scale'] = getattr(self, 'spread_power', 1.0)
+        top_error_type = getattr(self, 'top_error_type', None)
+        outdf['Is Top Pinyin Error'] = 1 if top_error_type == 'pinyin' else 0
+        outdf['Is Top Meaning Error'] = 1 if top_error_type == 'meaning' else 0
         self.quiz_result = outdf
         return outdf
     

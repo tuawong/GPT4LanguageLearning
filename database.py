@@ -29,6 +29,20 @@ def init_db() -> None:
     """Create any missing tables. Safe to call multiple times."""
     Base.metadata.create_all(bind=engine)
     backfill_pair_ids()
+    migrate_quiz_log_columns()
+
+
+def migrate_quiz_log_columns() -> None:
+    """
+    Add is_top_pinyin_error and is_top_meaning_error columns to QuizLog if missing.
+    Safe to call on every startup — no-op once columns exist.
+    """
+    with engine.begin() as conn:
+        existing = [row[1] for row in conn.execute(text("PRAGMA table_info(QuizLog)"))]
+        if 'is_top_pinyin_error' not in existing:
+            conn.execute(text("ALTER TABLE QuizLog ADD COLUMN is_top_pinyin_error INTEGER"))
+        if 'is_top_meaning_error' not in existing:
+            conn.execute(text("ALTER TABLE QuizLog ADD COLUMN is_top_meaning_error INTEGER"))
 
 
 def backfill_pair_ids() -> None:

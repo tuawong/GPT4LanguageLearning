@@ -308,6 +308,7 @@ def handle_quiz_buttons(n_quiz_clicks, n_score_clicks, n_top_errors_clicks, num_
         quiz_df = quiz_generator.generate_pinyin_and_meaning_quiz(
             id_column=id_col,
             word_ids=top_word_ids,
+            top_error_type=error_type,
         )
         display_df = quiz_df.drop(columns=['Word Id'])
         display_data = display_df.to_dict('records')

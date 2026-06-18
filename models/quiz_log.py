@@ -18,3 +18,5 @@ class QuizLog(Base):
     meaning_correction = Column(String, nullable=False)
     last_quiz = Column(DateTime(timezone=True), server_default=func.now())
     adaptive_sample_scale = Column(Float, nullable=True, default=1.0)
+    is_top_pinyin_error = Column(Integer, nullable=True)
+    is_top_meaning_error = Column(Integer, nullable=True)

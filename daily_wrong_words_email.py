@@ -46,6 +46,11 @@ load_dotenv(ENV_PATH)
 DEFAULT_TOP_N = 20
 
 
+def _format_word_cell(word: object) -> str:
+    """Render Chinese words larger in the HTML email tables."""
+    return f"<span style='font-size: 2em;'>{word}</span>"
+
+
 def fetch_top_pinyin_errors(df: pd.DataFrame, top_n: int = DEFAULT_TOP_N) -> pd.DataFrame:
     """Return top pinyin error words (same logic as visualization dashboard)."""
     work = df.copy()
@@ -120,7 +125,12 @@ def _build_html_body(pinyin_df: pd.DataFrame, meaning_df: pd.DataFrame) -> str:
         html_parts.append("<p>No pinyin errors found.</p>")
     else:
         display_cols = ['Word', 'Pinyin', 'Meaning', 'Num Pinyin Wrong', 'Quiz Attempts', 'Pinyin Wrong %']
-        pinyin_table = pinyin_df[display_cols].to_html(index=False, border=1)
+        pinyin_table = pinyin_df[display_cols].to_html(
+            index=False,
+            border=1,
+            escape=False,
+            formatters={'Word': _format_word_cell},
+        )
         html_parts.append(pinyin_table)
     
     html_parts.append("<hr style='margin-top: 40px; margin-bottom: 40px;'>")
@@ -131,7 +141,12 @@ def _build_html_body(pinyin_df: pd.DataFrame, meaning_df: pd.DataFrame) -> str:
         html_parts.append("<p>No meaning errors found.</p>")
     else:
         display_cols = ['Word', 'Pinyin', 'Meaning', 'Num Meaning Wrong', 'Quiz Attempts', 'Meaning Wrong %']
-        meaning_table = meaning_df[display_cols].to_html(index=False, border=1)
+        meaning_table = meaning_df[display_cols].to_html(
+            index=False,
+            border=1,
+            escape=False,
+            formatters={'Word': _format_word_cell},
+        )
         html_parts.append(meaning_table)
     
     html_parts.append("</body></html>")

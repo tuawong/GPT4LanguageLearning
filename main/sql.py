@@ -286,7 +286,8 @@ def sql_update_quizlog(df: pd.DataFrame):
     
     required = ['quiz_id', 'word_id', 'word', 'sentence', 'sentence_pinyin',
        'pinyin_answer', 'pinyin_correct', 'pinyin_correction', 'meaning',
-       'meaning_correct', 'meaning_correction', 'last_quiz', 'adaptive_sample_scale']
+       'meaning_correct', 'meaning_correction', 'last_quiz', 'adaptive_sample_scale',
+       'is_top_pinyin_error', 'is_top_meaning_error']
         
     for col in required:
         if col not in df.columns:
